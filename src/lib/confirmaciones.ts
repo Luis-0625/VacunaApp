@@ -3,6 +3,7 @@ import { addDaysISO, fechasDisponibles, formatFechaLarga, todayISO } from "@/lib
 import { REMINDER_SELECT } from "@/lib/reminder-select";
 import { toE164 } from "@/lib/phone";
 import { datosContacto, getEstablecimiento, type Establecimiento } from "@/lib/establecimiento";
+import { enviosCampanaActivos, responderCampana } from "@/lib/campanas";
 import type { AutorizaMensajes, RecordatorioDetalle } from "@/types/db";
 
 type Detalle = RecordatorioDetalle & { cita: NonNullable<RecordatorioDetalle["cita"]> };
@@ -62,6 +63,14 @@ async function responder(db: SupabaseClient, est: Establecimiento, from: string,
   if (error) throw new Error(error.message);
 
   const activos = (data ?? []).filter((r): r is Detalle => !!r.cita);
+
+  // Campaña de pacientes atrasados: se atiende si es el mensaje más reciente que recibió este número
+  const campana = await enviosCampanaActivos(db, telefono);
+  if (campana.length > 0 &&
+      (activos.length === 0 || Date.parse(campana[0].enviado_at) >= Date.parse(activos[0].enviado_at ?? "0"))) {
+    return responderCampana(db, est, campana, texto, hoy, pie);
+  }
+
   if (activos.length === 0) {
     return "Hola 👋 No tienes citas pendientes por confirmar con este número. Si necesitas ayuda, comunícate con nosotros.";
   }

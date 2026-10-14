@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  BarChart3, BellRing, Building2, CalendarDays, ChevronsLeft, ChevronsRight, LayoutDashboard, LogOut, Pill, Syringe, UserCog, Users,
+  BarChart3, BellRing, Building2, CalendarDays, Megaphone, ChevronsLeft, ChevronsRight, LayoutDashboard, LogOut, Pill, Syringe, UserCog, Users,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Avatar, LogoEstablecimiento } from "@/components/ui";
@@ -19,6 +19,7 @@ const SECCIONES: { titulo: string; items: Item[] }[] = [
     items: [
       { href: "/dashboard", label: "Resumen", icon: LayoutDashboard, roles: ["ADMIN", "VACUNADOR"] },
       { href: "/dashboard/agenda", label: "Agenda", icon: CalendarDays, roles: ["ADMIN", "VACUNADOR"] },
+      { href: "/dashboard/atrasados", label: "Atrasados", icon: Megaphone, roles: ["ADMIN", "VACUNADOR"] },
       { href: "/dashboard/vacunacion", label: "Vacunación", icon: Syringe, roles: ["ADMIN", "VACUNADOR"] },
       { href: "/dashboard/pacientes", label: "Pacientes", icon: Users, roles: ["ADMIN", "VACUNADOR"] },
       { href: "/dashboard/recordatorios", label: "Recordatorios", icon: BellRing, roles: ["ADMIN", "VACUNADOR"] },
