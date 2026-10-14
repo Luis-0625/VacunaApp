@@ -3,6 +3,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { processReminder, tomorrowISO } from "@/lib/reminders";
 import { REMINDER_SELECT } from "@/lib/reminder-select";
 import { aEstablecimiento } from "@/lib/establecimiento";
+import { todayISO } from "@/lib/agenda";
+import { urlApp } from "@/lib/carne";
+import { calcularAlertasInventario } from "@/lib/inventario-alertas";
+import { sendAlertasInventarioEmail } from "@/lib/notifications/email";
 import type { RecordatorioDetalle } from "@/types/db";
 
 export const dynamic = "force-dynamic";
@@ -36,7 +40,26 @@ export async function GET(request: NextRequest) {
     if (establecimiento) results.push(await processReminder(db, r, establecimiento));
   }
 
+  // Alertas de inventario: un email por centro a sus administradores, solo si hay algo que atender
+  const hoy = todayISO();
+  const inventario = [];
+  for (const est of porCentro.values()) {
+    try {
+      const alertas = await calcularAlertasInventario(db, hoy, est.id!);
+      if (alertas.total === 0) continue;
+      const { data: admins } = await db.from("perfiles").select("email")
+        .eq("centro_id", est.id!).eq("rol", "ADMIN").eq("activo", true);
+      const to = (admins ?? []).map((a) => a.email as string).filter(Boolean);
+      if (!to.length) continue;
+      await sendAlertasInventarioEmail({ to, establecimiento: est, alertas, url: `${urlApp()}/dashboard/inventario` });
+      inventario.push({ centro: est.nombre, alertas: alertas.total, ok: true });
+    } catch (e) {
+      inventario.push({ centro: est.nombre, ok: false, error: (e as Error).message });
+    }
+  }
+
   return NextResponse.json({
+    inventario,
     fecha_objetivo: manana,
     total: results.length,
     enviados: results.filter((r) => r.ok).length,

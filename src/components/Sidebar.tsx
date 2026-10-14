@@ -38,9 +38,11 @@ const SECCIONES: { titulo: string; items: Item[] }[] = [
 ];
 
 export default function Sidebar({
-  nombre, rol, establecimiento, superadmin = false,
+  nombre, rol, establecimiento, superadmin = false, avisos = {},
 }: {
   nombre: string; rol: Rol; superadmin?: boolean;
+  /** Contador de alertas por enlace (ej. { "/dashboard/inventario": 3 }). */
+  avisos?: Record<string, number>;
   establecimiento: { nombre: string; ciudad: string | null; logo_url: string | null };
 }) {
   const pathname = usePathname();
@@ -72,8 +74,9 @@ export default function Sidebar({
       <nav className="fixed inset-x-0 bottom-0 z-40 flex justify-around overflow-x-auto border-t border-slate-200 bg-surface/95 py-2 backdrop-blur md:hidden">
         {links.map(({ href, label, icon: Icon }) => (
           <Link key={href} href={href}
-            className={`flex min-w-16 flex-col items-center gap-0.5 px-2 text-[11px] font-medium ${isActive(href) ? "text-brand-700" : "text-slate-500"}`}>
+            className={`relative flex min-w-16 flex-col items-center gap-0.5 px-2 text-[11px] font-medium ${isActive(href) ? "text-brand-700" : "text-slate-500"}`}>
             <Icon size={20} /> {label}
+            {!!avisos[href] && <span className="absolute right-3 top-0 h-2 w-2 rounded-full bg-red-500" aria-label={`${avisos[href]} alertas`} />}
           </Link>
         ))}
       </nav>
@@ -108,6 +111,10 @@ export default function Sidebar({
                     {isActive(href) && <span className="absolute inset-y-1.5 left-0 w-0.5 rounded-full bg-brand-600" />}
                     <Icon size={18} className={`shrink-0 ${isActive(href) ? "text-brand-600" : "text-slate-400 group-hover:text-slate-600"}`} />
                     {!collapsed && label}
+                    {!!avisos[href] && (collapsed
+                      ? <span className="absolute right-3 top-1.5 h-2 w-2 rounded-full bg-red-500" aria-label={`${avisos[href]} alertas`} />
+                      : <span className="ml-auto rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white tabular-nums"
+                          title={`${avisos[href]} alertas`}>{avisos[href]}</span>)}
                   </Link>
                 ))}
               </div>
