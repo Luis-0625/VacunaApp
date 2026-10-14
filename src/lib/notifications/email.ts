@@ -44,6 +44,11 @@ export async function sendReminderEmail(input: ReminderEmailInput): Promise<void
             ${contacto ? `<p style="margin:0 0 16px;padding:12px 16px;background:#f8fafc;border-radius:8px;line-height:1.7;font-size:14px">${contacto}</p>` : ""}
             <p style="margin:0;color:#475569;font-size:14px;line-height:1.6">Si no puedes asistir, responde al WhatsApp del recordatorio o comunícate con nosotros para reprogramar tu cita.</p>
           </div>
+          <div style="padding:14px 24px;border-top:1px solid #e2e8f0;color:#94a3b8;font-size:12px;line-height:1.5">
+            Recibes este mensaje porque autorizaste a ${escapeHtml(est.nombre)} a enviarte recordatorios (Ley 1581 de 2012).
+            Si no deseas recibir más mensajes, responde <strong>SALIR</strong> al WhatsApp
+            ${est.email ? `o escríbenos a ${escapeHtml(est.email)}` : "o comunícate con nosotros"}.
+          </div>
         </div>
       </div>`,
   });

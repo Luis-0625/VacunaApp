@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requireApi } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { toE164 } from "@/lib/phone";
+import { parseAutoriza } from "@/lib/pacientes";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,7 @@ const ALIASES: Record<string, string[]> = {
   email: ["email", "correo", "correo_electronico", "mail"],
   telefono: ["telefono", "celular", "movil", "phone", "whatsapp"],
   fecha_nacimiento: ["fecha_nacimiento", "nacimiento", "fecha_de_nacimiento", "birthdate"],
+  autoriza_mensajes: ["autoriza_mensajes", "autoriza", "autorizacion", "consentimiento", "acepta_mensajes"],
 };
 
 const norm = (k: string) =>
@@ -68,6 +70,7 @@ export async function POST(request: NextRequest) {
     const emailRaw = String(pick(row, "email") ?? "").trim().toLowerCase();
     const telRaw = pick(row, "telefono");
     const fecha = toISODate(pick(row, "fecha_nacimiento"));
+    const autoriza = parseAutoriza(pick(row, "autoriza_mensajes"));
 
     const fail = (motivo: string) => errores.push({ fila, documento: doc || undefined, motivo });
 
@@ -78,6 +81,7 @@ export async function POST(request: NextRequest) {
     if (!telefono) return fail(`Teléfono inválido: ${telRaw}`);
     if (emailRaw && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw)) return fail(`Email inválido: ${emailRaw}`);
     if (fecha === "invalid") return fail("fecha_nacimiento inválida (usa AAAA-MM-DD o DD/MM/AAAA)");
+    if (autoriza === "invalid") return fail("autoriza_mensajes inválido (usa si / no)");
     if (validos.has(doc)) return fail("Documento duplicado en el archivo");
 
     validos.set(doc, {
@@ -86,14 +90,17 @@ export async function POST(request: NextRequest) {
       email: emailRaw || null,
       telefono,
       fecha_nacimiento: fecha,
+      // Si la columna viene vacía no se toca la autorización que ya tenga el paciente
+      ...(autoriza && { autoriza_mensajes: autoriza, autorizacion_medio: "IMPORTACION" }),
     });
   });
 
   let importados = 0;
   if (validos.size > 0) {
     const db = createAdminClient();
-    const lote = Array.from(validos.values());
-    for (let i = 0; i < lote.length; i += 500) {
+    const todos = Array.from(validos.values());
+    const grupos = [todos.filter((r) => "autoriza_mensajes" in r), todos.filter((r) => !("autoriza_mensajes" in r))];
+    for (const lote of grupos) for (let i = 0; i < lote.length; i += 500) {
       const chunk = lote.slice(i, i + 500);
       const { error } = await db
         .from("pacientes")

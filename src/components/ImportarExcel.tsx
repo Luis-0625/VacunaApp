@@ -76,7 +76,7 @@ export default function ImportarExcel({ onDone }: { onDone?: () => void }) {
         <FileSpreadsheet className="mx-auto mb-2 text-brand-600" size={36} />
         <p className="font-medium">Arrastra tu archivo aquí o haz clic para seleccionarlo</p>
         <p className="text-xs text-slate-500 mt-1">
-          .xlsx, .xls o .csv · Columnas: nombre_completo, documento_identidad, telefono, email, fecha_nacimiento
+          .xlsx, .xls o .csv · Columnas: nombre_completo, documento_identidad, telefono, email, fecha_nacimiento, autoriza_mensajes (si/no)
         </p>
         <input
           ref={inputRef} type="file" accept=".xlsx,.xls,.csv" hidden

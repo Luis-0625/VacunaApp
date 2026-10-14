@@ -53,6 +53,7 @@ export async function sendReminderWhatsApp(input: ReminderMessageInput): Promise
       `Hola ${input.nombrePaciente}, te recordamos que mañana ${fecha} ` +
       `te corresponde la dosis ${input.numeroDosis} de ${input.vacuna} en *${est.nombre}*.\n\n` +
       (contacto ? `${contacto}\n\n` : "") +
-      `Responde *1* para CONFIRMAR o *2* para REPROGRAMAR.`,
+      `Responde *1* para CONFIRMAR o *2* para REPROGRAMAR.\n\n` +
+      `_Si no deseas recibir más mensajes, responde SALIR._`,
   });
 }

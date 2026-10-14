@@ -27,6 +27,8 @@ export async function processReminder(
 
   if (!cita) {
     errors.push("Cita no encontrada");
+  } else if (cita.paciente.autoriza_mensajes === "NO_AUTORIZADO") {
+    errors.push("El paciente no autoriza recibir mensajes (Ley 1581)");
   } else {
     const base = {
       establecimiento: establecimiento ?? (await getEstablecimiento(db)),

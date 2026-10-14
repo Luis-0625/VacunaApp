@@ -1,4 +1,4 @@
-import type { Confirmacion, EstadoEnvio } from "@/types/db";
+import type { AutorizaMensajes, Confirmacion, EstadoEnvio } from "@/types/db";
 
 const AVATAR_COLORS = [
   "bg-brand-100 text-brand-700",
@@ -49,6 +49,22 @@ export function ConfirmacionBadge({ confirmacion }: { confirmacion: Confirmacion
   return (
     <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${s.badge}`}>
       {s.label}
+    </span>
+  );
+}
+
+const AUTORIZACION_STYLES: Record<AutorizaMensajes | "SIN_REGISTRAR", { cls: string; label: string }> = {
+  AUTORIZADO: { cls: "text-emerald-700", label: "Autoriza mensajes" },
+  NO_AUTORIZADO: { cls: "text-red-700", label: "No autoriza mensajes" },
+  SIN_REGISTRAR: { cls: "text-amber-700", label: "Autorización sin registrar" },
+};
+
+/** Estado de la autorización de mensajes del paciente (Ley 1581). */
+export function AutorizacionBadge({ estado }: { estado: AutorizaMensajes | null }) {
+  const s = AUTORIZACION_STYLES[estado ?? "SIN_REGISTRAR"];
+  return (
+    <span className={`inline-flex items-center gap-1 text-[11px] font-medium ${s.cls}`}>
+      <span className="h-1.5 w-1.5 rounded-full bg-current" />{s.label}
     </span>
   );
 }

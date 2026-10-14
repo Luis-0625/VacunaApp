@@ -44,7 +44,8 @@ export async function GET() {
 
     add("Pacientes", pacientes.map((p) => ({
       nombre_completo: p.nombre_completo, documento_identidad: p.documento_identidad, telefono: p.telefono,
-      email: p.email ?? "", fecha_nacimiento: p.fecha_nacimiento ?? "", registrado: p.created_at.slice(0, 10),
+      email: p.email ?? "", fecha_nacimiento: p.fecha_nacimiento ?? "",
+      autoriza_mensajes: p.autoriza_mensajes === "AUTORIZADO" ? "si" : p.autoriza_mensajes === "NO_AUTORIZADO" ? "no" : "", registrado: p.created_at.slice(0, 10),
     })));
     add("Vacunas", vacunas.map((v) => ({
       nombre: v.nombre, dosis_totales: v.dosis_totales, intervalo_dias: v.intervalo_dias_recom_dosis ?? "", descripcion: v.descripcion ?? "",

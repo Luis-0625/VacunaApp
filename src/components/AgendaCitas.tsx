@@ -1,17 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CalendarCheck, CalendarClock, CalendarSync, MessageCircleQuestion, Phone, RefreshCw } from "lucide-react";
+import { CalendarCheck, CalendarClock, CalendarSync, MessageCircleQuestion, Phone, RefreshCw, ShieldX } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { addDaysISO, formatFechaLarga, todayISO } from "@/lib/agenda";
 import { Avatar } from "@/components/ui";
-import type { Confirmacion, EstadoEnvio } from "@/types/db";
+import type { AutorizaMensajes, Confirmacion, EstadoEnvio } from "@/types/db";
 
 interface CitaAgenda {
   id: string;
   numero_dosis: number;
   fecha_proxima_dosis: string;
-  paciente: { nombre_completo: string; documento_identidad: string; telefono: string };
+  paciente: { nombre_completo: string; documento_identidad: string; telefono: string; autoriza_mensajes: AutorizaMensajes | null };
   vacuna: { nombre: string };
   recordatorio: {
     estado_envio: EstadoEnvio;
@@ -62,7 +62,7 @@ const RANGOS = [
 
 const SELECT = `
   id, numero_dosis, fecha_proxima_dosis,
-  paciente:pacientes!inner (nombre_completo, documento_identidad, telefono),
+  paciente:pacientes!inner (nombre_completo, documento_identidad, telefono, autoriza_mensajes),
   vacuna:vacunas!inner (nombre),
   recordatorio:recordatorios (estado_envio, confirmacion, reprogramaciones, respondido_at)`;
 
@@ -191,6 +191,12 @@ export default function AgendaCitas() {
                     </div>
                     <div className="flex flex-col items-end gap-1">
                       <div className="flex flex-wrap justify-end gap-1.5">
+                        {c.paciente.autoriza_mensajes === "NO_AUTORIZADO" && (
+                          <span title="El paciente no autoriza recibir mensajes: confirma la cita por otro medio"
+                            className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/20">
+                            <ShieldX size={12} /> No autoriza mensajes
+                          </span>
+                        )}
                         {reprogramada(c) && (
                           <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-700 ring-1 ring-inset ring-violet-600/20">
                             <CalendarSync size={12} /> Reprogramada{r!.reprogramaciones > 1 ? ` ×${r!.reprogramaciones}` : ""}

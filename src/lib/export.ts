@@ -9,6 +9,7 @@ const rowsOf = (pacientes: Paciente[]) =>
     telefono: p.telefono,
     email: p.email ?? "",
     fecha_nacimiento: p.fecha_nacimiento ?? "",
+    autoriza_mensajes: p.autoriza_mensajes === "AUTORIZADO" ? "si" : p.autoriza_mensajes === "NO_AUTORIZADO" ? "no" : "",
   }));
 
 const stamp = () => new Date().toISOString().slice(0, 10);

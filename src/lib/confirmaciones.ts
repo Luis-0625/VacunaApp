@@ -3,7 +3,7 @@ import { addDaysISO, fechasDisponibles, formatFechaLarga, todayISO } from "@/lib
 import { REMINDER_SELECT } from "@/lib/reminder-select";
 import { toE164 } from "@/lib/phone";
 import { datosContacto, getEstablecimiento, type Establecimiento } from "@/lib/establecimiento";
-import type { RecordatorioDetalle } from "@/types/db";
+import type { AutorizaMensajes, RecordatorioDetalle } from "@/types/db";
 
 type Detalle = RecordatorioDetalle & { cita: NonNullable<RecordatorioDetalle["cita"]> };
 
@@ -38,6 +38,15 @@ async function responder(db: SupabaseClient, est: Establecimiento, from: string,
   const telefono = toE164(from.replace(/^whatsapp:/i, ""), process.env.DEFAULT_COUNTRY_CODE ?? "57");
   if (!telefono) return "No pudimos identificar tu número. Comunícate con nosotros directamente.";
 
+  // Autorización de mensajes (Ley 1581): el paciente puede retirarla o renovarla en cualquier momento
+  const texto = normalizar(body);
+  if (/^(salir|baja|stop|parar|detener|no mas mensajes)\b/.test(texto)) {
+    return cambiarAutorizacion(db, telefono, "NO_AUTORIZADO");
+  }
+  if (/^(alta|start|reanudar)\b/.test(texto)) {
+    return cambiarAutorizacion(db, telefono, "AUTORIZADO");
+  }
+
   const hoy = todayISO();
   const { data, error } = await db
     .from("recordatorios")
@@ -56,8 +65,6 @@ async function responder(db: SupabaseClient, est: Establecimiento, from: string,
   if (activos.length === 0) {
     return "Hola 👋 No tienes citas pendientes por confirmar con este número. Si necesitas ayuda, comunícate con nosotros.";
   }
-
-  const texto = normalizar(body);
 
   // 1. El paciente está eligiendo una nueva fecha
   const eligiendo = activos.filter((r) => r.confirmacion === "REPROGRAMANDO");
@@ -94,6 +101,21 @@ async function responder(db: SupabaseClient, est: Establecimiento, from: string,
   }
 
   return `Hola ${nombres(grupo)}, tienes cita el ${formatFechaLarga(fecha)} para: ${listaVacunas(grupo)}.\n\n${INSTRUCCIONES}`;
+}
+
+/** Aplica la autorización a todos los pacientes con ese teléfono (queda en autorizaciones_log). */
+async function cambiarAutorizacion(db: SupabaseClient, telefono: string, estado: AutorizaMensajes): Promise<string> {
+  const { data, error } = await db
+    .from("pacientes")
+    .update({ autoriza_mensajes: estado, autorizacion_medio: "WHATSAPP" })
+    .eq("telefono", telefono)
+    .select("id");
+  if (error) throw new Error(error.message);
+  if (!data?.length) return "No encontramos pacientes registrados con este número.";
+
+  return estado === "NO_AUTORIZADO"
+    ? "Listo. No te enviaremos más recordatorios a este número. Si cambias de opinión, responde *ALTA*."
+    : "¡Listo! Volverás a recibir los recordatorios de tus vacunas. Puedes responder *SALIR* en cualquier momento para dejar de recibirlos.";
 }
 
 function menuFechas(opciones: string[], prefijo = ""): string {

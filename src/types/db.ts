@@ -1,6 +1,9 @@
 export type EstadoCita = "PENDIENTE" | "COMPLETADA" | "CANCELADA";
 export type EstadoEnvio = "PENDIENTE" | "ENVIADO" | "FALLIDO";
 export type CanalEnvio = "EMAIL" | "WHATSAPP" | "AMBOS";
+/** Autorización del paciente para recibir mensajes (Ley 1581). null = sin registrar. */
+export type AutorizaMensajes = "AUTORIZADO" | "NO_AUTORIZADO";
+export type MedioAutorizacion = "FORMULARIO" | "WHATSAPP" | "IMPORTACION";
 /** Respuesta del paciente al recordatorio por WhatsApp (null = sin respuesta). */
 export type Confirmacion = "CONFIRMADA" | "REPROGRAMANDO" | "REPROGRAMADA";
 
@@ -12,6 +15,9 @@ export interface Paciente {
   telefono: string;
   fecha_nacimiento: string | null;
   created_at: string;
+  autoriza_mensajes: AutorizaMensajes | null;
+  autorizacion_fecha: string | null;
+  autorizacion_medio: MedioAutorizacion | null;
 }
 
 export interface Vacuna {

@@ -12,6 +12,12 @@ export async function POST(request: NextRequest) {
 
   const parsed = parsePaciente(await request.json().catch(() => null));
   if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 });
+  if (!parsed.data.autoriza_mensajes) {
+    return NextResponse.json(
+      { error: "Indica si el paciente autoriza recibir recordatorios (Ley 1581)" },
+      { status: 400 }
+    );
+  }
 
   const { data, error } = await db.from("pacientes").insert(parsed.data).select().single();
   if (error) {

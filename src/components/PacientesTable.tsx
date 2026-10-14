@@ -7,7 +7,7 @@ import Modal from "@/components/Modal";
 import type { Paciente } from "@/types/db";
 import ImportarExcel from "@/components/ImportarExcel";
 import PacienteForm from "@/components/PacienteForm";
-import { Avatar, PageHeader } from "@/components/ui";
+import { AutorizacionBadge, Avatar, PageHeader } from "@/components/ui";
 import { exportPacientes } from "@/lib/export";
 
 const PAGE = 12;
@@ -126,6 +126,7 @@ export default function PacientesTable({ pacientes, esAdmin }: { pacientes: Paci
                   <td className="td">
                     <div className="flex items-center gap-1.5 text-slate-700"><Phone size={13} className="text-slate-400" />{p.telefono}</div>
                     <div className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500"><Mail size={13} className="text-slate-400" />{p.email ?? "Sin email"}</div>
+                    <div className="mt-1"><AutorizacionBadge estado={p.autoriza_mensajes} /></div>
                   </td>
                   <td className="td text-slate-600">{p.fecha_nacimiento ?? "—"}</td>
                   <td className="td">
