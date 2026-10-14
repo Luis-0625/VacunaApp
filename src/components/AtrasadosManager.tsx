@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarCheck, Clock, Megaphone, Phone, Search, Send, UserRoundX, Users } from "lucide-react";
+import Link from "next/link";
+import { CalendarCheck, Clock, FileText, Megaphone, Phone, Search, Send, UserRoundX, Users } from "lucide-react";
 import Modal from "@/components/Modal";
 import { AutorizacionBadge, Avatar, formatDay } from "@/components/ui";
 import {
@@ -40,6 +41,7 @@ function AtrasoBadge({ dias }: { dias: number }) {
 
 /** Motivo por el que no se puede incluir en una campaña (null = se puede). */
 function bloqueo(d: DosisPendiente): string | null {
+  if (d.ultima_respuesta === "YA_APLICADA") return "Dijo que ya se vacunó: regístrala como dosis externa";
   if (d.autoriza_mensajes === "NO_AUTORIZADO") return "No autoriza mensajes";
   if (d.ultimo_contacto && Date.now() - Date.parse(d.ultimo_contacto) < DIAS_ENTRE_CONTACTOS * 86400000) {
     return `Contactado hace menos de ${DIAS_ENTRE_CONTACTOS} días`;
@@ -170,6 +172,17 @@ export default function AtrasadosManager({
                     </td>
                     <td className="td text-slate-600">
                       {a.vacuna} <span className="text-slate-400">· dosis {a.numero_dosis + 1} de {a.dosis_totales}</span>
+                      {a.ultima_respuesta === "YA_APLICADA" && (
+                        <div className="mt-1.5 space-y-1">
+                          <span className="inline-flex rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-medium text-sky-700 ring-1 ring-inset ring-sky-600/20">
+                            Dice que ya se la aplicó
+                          </span>
+                          <Link href={`/dashboard/vacunacion?paciente=${a.paciente_id}&vacuna=${a.vacuna_id}&externa=1`}
+                            className="flex items-center gap-1 text-xs font-medium text-brand-700 hover:underline">
+                            <FileText size={12} /> Registrar como dosis externa
+                          </Link>
+                        </div>
+                      )}
                     </td>
                     <td className="td text-slate-600">{formatDay(a.fecha_proxima_dosis)}</td>
                     <td className="td"><AtrasoBadge dias={a.dias} /></td>

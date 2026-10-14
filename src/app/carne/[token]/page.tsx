@@ -24,6 +24,8 @@ interface Dosis {
   numero_dosis: number;
   fecha_aplicacion: string;
   fecha_proxima_dosis: string | null;
+  externa: boolean;
+  lugar_externo: string | null;
   vacuna: { nombre: string; dosis_totales: number };
 }
 
@@ -52,7 +54,7 @@ export default async function CarnePage({ params }: { params: { token: string } 
 
   const [{ data: dosis }, est] = await Promise.all([
     db.from("citas_vacunacion")
-      .select("id, vacuna_id, numero_dosis, fecha_aplicacion, fecha_proxima_dosis, vacuna:vacunas!inner(nombre, dosis_totales)")
+      .select("id, vacuna_id, numero_dosis, fecha_aplicacion, fecha_proxima_dosis, externa, lugar_externo, vacuna:vacunas!inner(nombre, dosis_totales)")
       .eq("paciente_id", paciente.id).neq("estado", "CANCELADA")
       .order("fecha_aplicacion").order("numero_dosis")
       .returns<Dosis[]>(),
@@ -106,7 +108,7 @@ export default async function CarnePage({ params }: { params: { token: string } 
 
           {/* Vacunas */}
           <section className="border-t border-slate-200">
-            <h2 className="px-6 pb-2 pt-4 text-sm font-semibold text-slate-700">Vacunas aplicadas en {est.nombre}</h2>
+            <h2 className="px-6 pb-2 pt-4 text-sm font-semibold text-slate-700">Vacunas registradas en {est.nombre}</h2>
             {porVacuna.size === 0 && (
               <p className="px-6 pb-5 text-sm text-slate-500">Aún no hay vacunas registradas.</p>
             )}
@@ -126,9 +128,16 @@ export default async function CarnePage({ params }: { params: { token: string } 
                     </div>
                     <ol className="space-y-1 pl-6 text-sm">
                       {lista.map((d) => (
-                        <li key={d.id} className="flex justify-between gap-3 text-slate-600">
-                          <span>Dosis {d.numero_dosis}</span>
-                          <span className="tabular-nums">{formatFechaLarga(d.fecha_aplicacion)}</span>
+                        <li key={d.id} className="text-slate-600">
+                          <div className="flex justify-between gap-3">
+                            <span>Dosis {d.numero_dosis}</span>
+                            <span className="tabular-nums">{formatFechaLarga(d.fecha_aplicacion)}</span>
+                          </div>
+                          {d.externa && (
+                            <div className="text-[11px] text-amber-700">
+                              Aplicada en {d.lugar_externo ?? "otro lugar"} · externa, no verificada por {est.nombre}
+                            </div>
+                          )}
                         </li>
                       ))}
                     </ol>
@@ -169,8 +178,9 @@ export default async function CarnePage({ params }: { params: { token: string } 
           <footer className="flex items-start gap-2 border-t border-slate-200 bg-slate-50 px-6 py-4 text-[11px] leading-relaxed text-slate-500">
             <Info size={14} className="mt-0.5 shrink-0" />
             <span>
-              Este carné muestra únicamente las vacunas registradas en {est.nombre}. No reemplaza el carné oficial
-              de vacunación ni el registro del Programa Ampliado de Inmunizaciones (PAI).
+              Este carné muestra únicamente las vacunas registradas en {est.nombre}. Las dosis marcadas como externas
+              se tomaron de otros documentos del paciente y no fueron aplicadas ni verificadas por el centro. No reemplaza
+              el carné oficial de vacunación ni el registro del Programa Ampliado de Inmunizaciones (PAI).
               {est.telefono && ` Información: ${est.telefono}.`}
             </span>
           </footer>

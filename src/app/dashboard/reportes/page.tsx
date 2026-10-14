@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 interface Cita {
   paciente_id: string; vacuna_id: string; numero_dosis: number; fecha_aplicacion: string;
-  fecha_proxima_dosis: string | null; aplicada_por: string | null;
+  fecha_proxima_dosis: string | null; aplicada_por: string | null; externa: boolean;
   vacuna: { nombre: string; dosis_totales: number };
 }
 
@@ -48,7 +48,7 @@ export default async function ReportesPage({ searchParams }: { searchParams: { d
 
   const [citas, perfiles] = await Promise.all([
     fetchAll<Cita>((f, t) => db.from("citas_vacunacion")
-      .select("paciente_id, vacuna_id, numero_dosis, fecha_aplicacion, fecha_proxima_dosis, aplicada_por, vacuna:vacunas!inner(nombre, dosis_totales)")
+      .select("paciente_id, vacuna_id, numero_dosis, fecha_aplicacion, fecha_proxima_dosis, aplicada_por, externa, vacuna:vacunas!inner(nombre, dosis_totales)")
       .neq("estado", "CANCELADA").order("fecha_aplicacion", { ascending: false }).order("id").range(f, t).returns<Cita[]>()),
     fetchAll<Perfil>((f, t) => db.from("perfiles").select("*").order("user_id").range(f, t).returns<Perfil[]>()),
   ]);
@@ -57,7 +57,8 @@ export default async function ReportesPage({ searchParams }: { searchParams: { d
     db.from("recordatorios").select("id", { count: "exact", head: true }).eq("estado_envio", estado).gte("fecha_programada", desde);
   const [env, fail, pend] = await Promise.all([recCount("ENVIADO"), recCount("FALLIDO"), recCount("PENDIENTE")]);
 
-  const enRango = citas.filter((c) => c.fecha_aplicacion >= desde);
+  // Las dosis externas (de otro lugar) cuentan para el esquema, pero no como aplicadas por el centro
+  const enRango = citas.filter((c) => !c.externa && c.fecha_aplicacion >= desde);
   const tally = (key: (c: Cita) => string) => {
     const m = new Map<string, number>();
     enRango.forEach((c) => m.set(key(c), (m.get(key(c)) ?? 0) + 1));
@@ -71,7 +72,7 @@ export default async function ReportesPage({ searchParams }: { searchParams: { d
 
   // Últimos 14 días
   const dias14 = Array.from({ length: 14 }, (_, i) => addDays(hoy, i - 13));
-  const porDia = dias14.map((d) => [d, citas.filter((c) => c.fecha_aplicacion === d).length] as const);
+  const porDia = dias14.map((d) => [d, citas.filter((c) => !c.externa && c.fecha_aplicacion === d).length] as const);
   const maxDia = Math.max(1, ...porDia.map(([, n]) => n));
 
   // Pacientes con la próxima dosis vencida y sin retornar (oportunidad de recontactar)

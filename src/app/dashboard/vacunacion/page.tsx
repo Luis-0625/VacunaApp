@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
-export default async function VacunacionPage() {
+export default async function VacunacionPage({ searchParams }: { searchParams: { paciente?: string; vacuna?: string; externa?: string } }) {
   const db = createClient();
   const [pacientes, vacunas, recientes] = await Promise.all([
     fetchAll<PacienteLite>((f, t) =>
@@ -14,7 +14,7 @@ export default async function VacunacionPage() {
     ),
     db.from("vacunas").select("*").order("nombre").returns<Vacuna[]>(),
     db.from("citas_vacunacion")
-      .select("id, numero_dosis, fecha_aplicacion, fecha_proxima_dosis, paciente:pacientes!inner(nombre_completo), vacuna:vacunas!inner(nombre, dosis_totales)")
+      .select("id, numero_dosis, fecha_aplicacion, fecha_proxima_dosis, externa, paciente:pacientes!inner(nombre_completo), vacuna:vacunas!inner(nombre, dosis_totales)")
       .neq("estado", "CANCELADA").order("fecha_aplicacion", { ascending: false }).order("id").limit(12)
       .returns<Reciente[]>(),
   ]);
@@ -22,7 +22,8 @@ export default async function VacunacionPage() {
   return (
     <>
       <PageHeader title="Registrar vacunación" subtitle="Registra la dosis aplicada y el sistema programa el recordatorio de la siguiente" />
-      <RegistrarVacunacion pacientes={pacientes} vacunas={vacunas.data ?? []} recientes={recientes.data ?? []} />
+      <RegistrarVacunacion pacientes={pacientes} vacunas={vacunas.data ?? []} recientes={recientes.data ?? []}
+        inicial={{ pacienteId: searchParams.paciente, vacunaId: searchParams.vacuna, externa: searchParams.externa === "1" }} />
     </>
   );
 }

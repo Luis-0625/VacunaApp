@@ -10,7 +10,7 @@ export const maxDuration = 60;
 
 interface CitaRow {
   numero_dosis: number; fecha_aplicacion: string; fecha_proxima_dosis: string | null; estado: string;
-  aplicada_por: string | null;
+  aplicada_por: string | null; externa: boolean; lugar_externo: string | null;
   paciente: { nombre_completo: string; documento_identidad: string };
   vacuna: { nombre: string; dosis_totales: number };
 }
@@ -29,7 +29,7 @@ export async function GET() {
       fetchAll<Paciente>((f, t) => db.from("pacientes").select("*").order("nombre_completo").order("id").range(f, t).returns<Paciente[]>()),
       fetchAll<Vacuna>((f, t) => db.from("vacunas").select("*").order("nombre").order("id").range(f, t).returns<Vacuna[]>()),
       fetchAll<CitaRow>((f, t) => db.from("citas_vacunacion")
-        .select("id, numero_dosis, fecha_aplicacion, fecha_proxima_dosis, estado, aplicada_por, paciente:pacientes!inner(nombre_completo, documento_identidad), vacuna:vacunas!inner(nombre, dosis_totales)")
+        .select("id, numero_dosis, fecha_aplicacion, fecha_proxima_dosis, estado, aplicada_por, externa, lugar_externo, paciente:pacientes!inner(nombre_completo, documento_identidad), vacuna:vacunas!inner(nombre, dosis_totales)")
         .order("fecha_aplicacion", { ascending: false }).order("id").range(f, t).returns<CitaRow[]>()),
       fetchAll<RecRow>((f, t) => db.from("recordatorios")
         .select("id, cita_id, estado_envio, canal, fecha_programada, intentos, ultimo_error, cita:citas_vacunacion!inner(paciente:pacientes!inner(nombre_completo), vacuna:vacunas!inner(nombre))")
@@ -53,7 +53,9 @@ export async function GET() {
     add("Vacunaciones", citas.map((c) => ({
       paciente: c.paciente.nombre_completo, documento: c.paciente.documento_identidad, vacuna: c.vacuna.nombre,
       dosis: `${c.numero_dosis}/${c.vacuna.dosis_totales}`, fecha_aplicacion: c.fecha_aplicacion,
-      proxima_dosis: c.fecha_proxima_dosis ?? "", estado: c.estado, aplicada_por: c.aplicada_por ? nombreDe.get(c.aplicada_por) ?? "" : "",
+      proxima_dosis: c.fecha_proxima_dosis ?? "", estado: c.estado,
+      lugar: c.externa ? `Externa: ${c.lugar_externo ?? ""}` : "Este centro",
+      aplicada_por: c.aplicada_por ? nombreDe.get(c.aplicada_por) ?? "" : "",
     })));
     add("Recordatorios", recs.map((r) => ({
       paciente: r.cita.paciente.nombre_completo, vacuna: r.cita.vacuna.nombre, fecha_programada: r.fecha_programada,

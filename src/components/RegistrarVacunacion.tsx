@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { BellRing, CheckCircle2, Search, Syringe, TriangleAlert } from "lucide-react";
+import { BellRing, Building2, CheckCircle2, FileText, Search, Syringe, TriangleAlert } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Avatar, formatDay } from "@/components/ui";
 import type { CanalEnvio, Vacuna } from "@/types/db";
@@ -10,11 +10,13 @@ import type { CanalEnvio, Vacuna } from "@/types/db";
 export interface PacienteLite { id: string; nombre_completo: string; documento_identidad: string }
 export interface Reciente {
   id: string; numero_dosis: number; fecha_aplicacion: string; fecha_proxima_dosis: string | null;
+  externa: boolean;
   paciente: { nombre_completo: string }; vacuna: { nombre: string; dosis_totales: number };
 }
 interface HistorialItem {
   id: string; vacuna_id: string; numero_dosis: number; fecha_aplicacion: string;
   fecha_proxima_dosis: string | null; vacuna: { nombre: string; dosis_totales: number };
+  externa: boolean; lugar_externo: string | null;
 }
 
 const addDays = (iso: string, n: number) =>
@@ -30,14 +32,20 @@ const CANALES: { value: CanalEnvio; label: string }[] = [
   { value: "EMAIL", label: "Email" },
 ];
 
+/** Valores iniciales (ej. desde Atrasados: registrar como externa la dosis que el paciente dice haber recibido). */
+export interface InicialVacunacion { pacienteId?: string; vacunaId?: string; externa?: boolean }
+
 export default function RegistrarVacunacion({
-  pacientes, vacunas, recientes,
-}: { pacientes: PacienteLite[]; vacunas: Vacuna[]; recientes: Reciente[] }) {
+  pacientes, vacunas, recientes, inicial = {},
+}: { pacientes: PacienteLite[]; vacunas: Vacuna[]; recientes: Reciente[]; inicial?: InicialVacunacion }) {
   const router = useRouter();
-  const [paciente, setPaciente] = useState<PacienteLite | null>(null);
+  const [paciente, setPaciente] = useState<PacienteLite | null>(
+    () => pacientes.find((p) => p.id === inicial.pacienteId) ?? null);
+  const [externa, setExterna] = useState(!!inicial.externa);
+  const [lugar, setLugar] = useState("");
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
-  const [vacunaId, setVacunaId] = useState("");
+  const [vacunaId, setVacunaId] = useState(inicial.vacunaId ?? "");
   const [fecha, setFecha] = useState(todayLocal);
   const [proximaManual, setProximaManual] = useState<string | null>(null);
   const [canal, setCanal] = useState<CanalEnvio>("AMBOS");
@@ -55,7 +63,7 @@ export default function RegistrarVacunacion({
   const loadHistorial = useCallback(async (id: string) => {
     const { data } = await createClient()
       .from("citas_vacunacion")
-      .select("id, vacuna_id, numero_dosis, fecha_aplicacion, fecha_proxima_dosis, vacuna:vacunas!inner(nombre, dosis_totales)")
+      .select("id, vacuna_id, numero_dosis, fecha_aplicacion, fecha_proxima_dosis, externa, lugar_externo, vacuna:vacunas!inner(nombre, dosis_totales)")
       .eq("paciente_id", id).neq("estado", "CANCELADA")
       .order("fecha_aplicacion", { ascending: false })
       .returns<HistorialItem[]>();
@@ -89,6 +97,7 @@ export default function RegistrarVacunacion({
       body: JSON.stringify({
         paciente_id: paciente.id, vacuna_id: vacuna.id, fecha_aplicacion: fecha,
         fecha_proxima_dosis: proxima || null, canal,
+        externa, lugar_externo: externa ? lugar : null,
       }),
     });
     const json = await res.json();
@@ -96,6 +105,7 @@ export default function RegistrarVacunacion({
     if (!res.ok) return setError(json.error ?? "No se pudo registrar");
 
     setOk(
+      (externa ? "Dosis externa registrada: " : "") +
       `${vacuna.nombre} · dosis ${json.numero_dosis} de ${json.dosis_totales} registrada para ${paciente.nombre_completo}. ` +
       (json.fecha_proxima_dosis
         ? `Próxima dosis: ${formatDay(json.fecha_proxima_dosis)} (recordatorio el ${formatDay(json.recordatorio_para)}).`
@@ -147,9 +157,43 @@ export default function RegistrarVacunacion({
           )}
         </div>
 
+        <div className="space-y-1.5">
+          <span className="text-sm font-medium text-slate-700">¿Dónde se aplicó?</span>
+          <div role="radiogroup" className="grid gap-2 sm:grid-cols-2">
+            {[
+              { valor: false, titulo: "En este centro", icon: Syringe },
+              { valor: true, titulo: "En otro lugar (carné físico)", icon: FileText },
+            ].map(({ valor, titulo, icon: Icon }) => (
+              <button key={titulo} type="button" role="radio" aria-checked={externa === valor} onClick={() => { setExterna(valor); setOk(null); }}
+                className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 text-left text-sm font-medium transition ${
+                  externa === valor ? "border-brand-600 bg-brand-50 text-brand-700" : "border-slate-300 text-slate-600 hover:bg-slate-50"
+                }`}>
+                <Icon size={16} className="shrink-0" /> {titulo}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {externa && (
+          <div className="space-y-1.5">
+            <label className="block space-y-1.5">
+              <span className="text-sm font-medium text-slate-700">Lugar donde se aplicó *</span>
+              <div className="relative">
+                <Building2 size={16} className="absolute left-3.5 top-3 text-slate-400" />
+                <input required maxLength={150} value={lugar} onChange={(e) => setLugar(e.target.value)}
+                  placeholder="Ej: Hospital San Jerónimo, Montería" className={`${inputCls} pl-10`} />
+              </div>
+            </label>
+            <p className="text-xs text-slate-500">
+              Copia los datos del carné físico del paciente. La dosis cuenta para su esquema, pero el carné digital la mostrará
+              como <strong>no verificada</strong> y no suma en los reportes de dosis aplicadas por el centro.
+            </p>
+          </div>
+        )}
+
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block space-y-1.5">
-            <span className="text-sm font-medium text-slate-700">Vacuna aplicada *</span>
+            <span className="text-sm font-medium text-slate-700">{externa ? "Vacuna *" : "Vacuna aplicada *"}</span>
             <select required value={vacunaId} onChange={(e) => { setVacunaId(e.target.value); setProximaManual(null); }} className={inputCls}>
               <option value="">Selecciona…</option>
               {vacunas.map((v) => <option key={v.id} value={v.id}>{v.nombre}</option>)}
@@ -157,7 +201,8 @@ export default function RegistrarVacunacion({
           </label>
           <label className="block space-y-1.5">
             <span className="text-sm font-medium text-slate-700">Fecha de aplicación *</span>
-            <input required type="date" value={fecha} onChange={(e) => { setFecha(e.target.value); setProximaManual(null); }} className={inputCls} />
+            <input required type="date" value={fecha} max={externa ? todayLocal() : undefined}
+              onChange={(e) => { setFecha(e.target.value); setProximaManual(null); }} className={inputCls} />
           </label>
         </div>
 
@@ -208,7 +253,7 @@ export default function RegistrarVacunacion({
         )}
 
         <button disabled={!paciente || !vacuna || completo || saving} className="btn-primary w-full justify-center py-3">
-          <Syringe size={16} /> {saving ? "Registrando…" : "Registrar vacunación"}
+          <Syringe size={16} /> {saving ? "Registrando…" : externa ? "Registrar dosis externa" : "Registrar vacunación"}
         </button>
       </form>
 
@@ -224,7 +269,7 @@ export default function RegistrarVacunacion({
                     <span className="text-slate-500">dosis {h.numero_dosis}/{h.vacuna.dosis_totales}</span>
                   </div>
                   <div className="text-xs text-slate-500">
-                    Aplicada {formatDay(h.fecha_aplicacion)}{h.fecha_proxima_dosis && ` · próxima ${formatDay(h.fecha_proxima_dosis)}`}
+                    {h.externa ? `Externa · ${h.lugar_externo ?? "otro lugar"} · ` : "Aplicada "}{formatDay(h.fecha_aplicacion)}{h.fecha_proxima_dosis && ` · próxima ${formatDay(h.fecha_proxima_dosis)}`}
                   </div>
                 </li>
               ))}
@@ -241,7 +286,10 @@ export default function RegistrarVacunacion({
                 <Avatar size="sm" name={r.paciente.nombre_completo} />
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-medium">{r.paciente.nombre_completo}</div>
-                  <div className="truncate text-xs text-slate-500">{r.vacuna.nombre} · dosis {r.numero_dosis}/{r.vacuna.dosis_totales}</div>
+                  <div className="truncate text-xs text-slate-500">
+                    {r.vacuna.nombre} · dosis {r.numero_dosis}/{r.vacuna.dosis_totales}
+                    {r.externa && <span className="ml-1.5 text-amber-700">· externa</span>}
+                  </div>
                 </div>
                 <div className="text-right text-xs text-slate-500">{formatDay(r.fecha_aplicacion)}</div>
               </li>

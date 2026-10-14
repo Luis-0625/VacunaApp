@@ -24,9 +24,17 @@ export async function POST(request: NextRequest) {
   const fecha = String(b?.fecha_aplicacion ?? "");
   const canal = (b?.canal ?? "AMBOS") as CanalEnvio;
   const proximaIn = b?.fecha_proxima_dosis ? String(b.fecha_proxima_dosis) : null;
+  // Dosis aplicada en otro lugar (registrada desde el carné físico del paciente)
+  const externa = b?.externa === true;
+  const lugarExterno = externa ? String(b?.lugar_externo ?? "").trim() : "";
 
   if (!pacienteId || !vacunaId) return NextResponse.json({ error: "Selecciona paciente y vacuna" }, { status: 400 });
   if (!ISO.test(fecha)) return NextResponse.json({ error: "Fecha de aplicación inválida" }, { status: 400 });
+  if (externa && !lugarExterno) return NextResponse.json({ error: "Indica dónde se aplicó la dosis" }, { status: 400 });
+  if (lugarExterno.length > 150) return NextResponse.json({ error: "El lugar de aplicación es demasiado largo" }, { status: 400 });
+  if (externa && fecha > addDays(tomorrowISO(), -1)) {
+    return NextResponse.json({ error: "Una dosis externa no puede tener fecha futura" }, { status: 400 });
+  }
   if (!CANALES.includes(canal)) return NextResponse.json({ error: "Canal inválido" }, { status: 400 });
   if (proximaIn && !ISO.test(proximaIn)) return NextResponse.json({ error: "Fecha de próxima dosis inválida" }, { status: 400 });
 
@@ -64,7 +72,8 @@ export async function POST(request: NextRequest) {
     .insert({
       paciente_id: pacienteId, vacuna_id: vacunaId, numero_dosis: numeroDosis,
       fecha_aplicacion: fecha, fecha_proxima_dosis: proxima, estado: "COMPLETADA",
-      aplicada_por: g.perfil.user_id,
+      aplicada_por: g.perfil.user_id, // en las externas: quién la registró
+      externa, lugar_externo: lugarExterno || null,
     })
     .select("id").single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -79,12 +88,15 @@ export async function POST(request: NextRequest) {
   }
 
   // Carné digital actualizado por WhatsApp; si falla, la vacunación ya quedó registrada igual.
-  let carne: { enviado: true } | { enviado: false; error: string };
-  try {
-    await enviarCarne(db, pacienteId);
-    carne = { enviado: true };
-  } catch (e) {
-    carne = { enviado: false, error: (e as Error).message };
+  // No se envía al registrar una dosis externa (el paciente no se acaba de vacunar aquí).
+  let carne: { enviado: true } | { enviado: false; error: string } | null = null;
+  if (!externa) {
+    try {
+      await enviarCarne(db, pacienteId);
+      carne = { enviado: true };
+    } catch (e) {
+      carne = { enviado: false, error: (e as Error).message };
+    }
   }
 
   return NextResponse.json({

@@ -18,6 +18,8 @@ export interface DosisPendiente {
   vacuna: string;
   dosis_totales: number;
   ultimo_contacto: string | null;
+  /** Última respuesta a una campaña: YA_APLICADA = dijo que se vacunó en otro lugar. */
+  ultima_respuesta: "ELIGIENDO" | "AGENDADA" | "YA_APLICADA" | null;
 }
 
 /** No se vuelve a contactar a un paciente por la misma dosis antes de estos días. */
