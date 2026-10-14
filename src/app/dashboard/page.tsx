@@ -1,4 +1,5 @@
-import { CalendarClock, MailCheck, Syringe, Users } from "lucide-react";
+import Link from "next/link";
+import { CalendarClock, MailCheck, Package, Syringe, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { tomorrowISO } from "@/lib/reminders";
 import { Avatar, ConfirmacionBadge, formatDay, PageHeader, StatusBadge, STATUS_STYLES } from "@/components/ui";
@@ -44,6 +45,16 @@ export default async function DashboardPage() {
       .returns<UltimoEnvio[]>(),
   ]);
 
+  // Alertas de inventario: lotes vencidos que aún tienen dosis y lotes por vencer en 30 días
+  const en30 = new Date(Date.parse(`${hoy}T00:00:00Z`) + 30 * 86400000).toISOString().slice(0, 10);
+  const [vencidos, porVencer] = await Promise.all([
+    db.from("lotes").select("id", { count: "exact", head: true }).gt("existencias", 0).lt("fecha_vencimiento", hoy),
+    db.from("lotes").select("id", { count: "exact", head: true }).gt("existencias", 0)
+      .gte("fecha_vencimiento", hoy).lte("fecha_vencimiento", en30),
+  ]);
+  const vencidosConDosis = vencidos.count ?? 0, lotesPorVencer = porVencer.count ?? 0;
+  const alertasInventario = vencidosConDosis + lotesPorVencer;
+
   const nPend = pend.count ?? 0, nEnv = env.count ?? 0, nFail = fail.count ?? 0;
   const total = nPend + nEnv + nFail;
   const pct = nEnv + nFail > 0 ? Math.round((nEnv / (nEnv + nFail)) * 100) : null;
@@ -62,6 +73,20 @@ export default async function DashboardPage() {
   return (
     <div>
       <PageHeader title="Resumen" subtitle="Actividad del centro de vacunación y estado de los recordatorios" />
+
+      {alertasInventario > 0 && (
+        <Link href="/dashboard/inventario"
+          className="mb-6 flex items-center justify-between gap-3 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-amber-200 transition hover:bg-amber-100">
+          <span className="flex items-center gap-2">
+            <Package size={18} className="shrink-0" />
+            Inventario: {[
+              vencidosConDosis && `${vencidosConDosis} ${vencidosConDosis === 1 ? "lote vencido" : "lotes vencidos"} con dosis`,
+              lotesPorVencer && `${lotesPorVencer} por vencer en 30 días`,
+            ].filter(Boolean).join(" · ")}
+          </span>
+          <span className="font-medium">Revisar →</span>
+        </Link>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {kpis.map(({ label, value, icon: Icon, tone }) => (

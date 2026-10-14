@@ -2,10 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { BellRing, Building2, CheckCircle2, FileText, Search, Syringe, TriangleAlert } from "lucide-react";
+import { BellRing, Building2, CheckCircle2, FileText, Package, Search, Syringe, TriangleAlert } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Avatar, formatDay } from "@/components/ui";
-import type { CanalEnvio, Vacuna } from "@/types/db";
+import type { CanalEnvio, Lote, Vacuna } from "@/types/db";
+
+type LoteLite = Pick<Lote, "id" | "numero_lote" | "laboratorio" | "fecha_vencimiento" | "existencias">;
 
 export interface PacienteLite { id: string; nombre_completo: string; documento_identidad: string }
 export interface Reciente {
@@ -17,6 +19,7 @@ interface HistorialItem {
   id: string; vacuna_id: string; numero_dosis: number; fecha_aplicacion: string;
   fecha_proxima_dosis: string | null; vacuna: { nombre: string; dosis_totales: number };
   externa: boolean; lugar_externo: string | null;
+  lote: { numero_lote: string } | null;
 }
 
 const addDays = (iso: string, n: number) =>
@@ -49,6 +52,9 @@ export default function RegistrarVacunacion({
   const [fecha, setFecha] = useState(todayLocal);
   const [proximaManual, setProximaManual] = useState<string | null>(null);
   const [canal, setCanal] = useState<CanalEnvio>("AMBOS");
+  // Lotes de la vacuna elegida, etiquetados con la vacuna a la que pertenecen
+  const [lotesDe, setLotesDe] = useState<{ vacunaId: string; items: LoteLite[] } | null>(null);
+  const [loteElegido, setLoteElegido] = useState<string | null>(null);
   // Historial etiquetado con el paciente al que pertenece: al cambiar de paciente nunca se usa el anterior
   const [historialDe, setHistorialDe] = useState<{ pacienteId: string; items: HistorialItem[] } | null>(null);
   const historial = paciente && historialDe?.pacienteId === paciente.id ? historialDe.items : [];
@@ -65,7 +71,7 @@ export default function RegistrarVacunacion({
   const loadHistorial = useCallback(async (id: string) => {
     const { data } = await createClient()
       .from("citas_vacunacion")
-      .select("id, vacuna_id, numero_dosis, fecha_aplicacion, fecha_proxima_dosis, externa, lugar_externo, vacuna:vacunas!inner(nombre, dosis_totales)")
+      .select("id, vacuna_id, numero_dosis, fecha_aplicacion, fecha_proxima_dosis, externa, lugar_externo, lote:lotes(numero_lote), vacuna:vacunas!inner(nombre, dosis_totales)")
       .eq("paciente_id", id).neq("estado", "CANCELADA")
       .order("fecha_aplicacion", { ascending: false })
       .returns<HistorialItem[]>();
@@ -77,7 +83,33 @@ export default function RegistrarVacunacion({
     if (paciente) loadHistorial(paciente.id);
   }, [paciente, loadHistorial]);
 
+  const loadLotes = useCallback(async (id: string) => {
+    const { data } = await createClient()
+      .from("lotes")
+      .select("id, numero_lote, laboratorio, fecha_vencimiento, existencias")
+      .eq("vacuna_id", id)
+      .order("fecha_vencimiento").order("numero_lote")
+      .returns<LoteLite[]>();
+    setLotesDe({ vacunaId: id, items: data ?? [] });
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- carga remota: el estado cambia al llegar la respuesta
+    if (vacunaId) loadLotes(vacunaId);
+  }, [vacunaId, loadLotes]);
+
   const vacuna = vacunas.find((v) => v.id === vacunaId) ?? null;
+
+  // Inventario: si la vacuna tiene lotes, la dosis debe salir de uno vigente con existencias.
+  // Se sugiere el que vence primero (los lotes llegan ordenados por vencimiento).
+  const cargandoLotes = !!vacuna && !externa && lotesDe?.vacunaId !== vacuna.id;
+  const lotes = vacuna && lotesDe?.vacunaId === vacuna.id ? lotesDe.items : [];
+  const llevaInventario = !externa && lotes.length > 0;
+  const disponibles = lotes.filter((l) => l.existencias > 0 && l.fecha_vencimiento >= fecha);
+  const loteId = llevaInventario
+    ? (disponibles.find((l) => l.id === loteElegido) ?? disponibles[0])?.id ?? null
+    : null;
+  const sinExistencias = llevaInventario && disponibles.length === 0;
   const numeroDosis = vacuna
     ? Math.max(0, ...historial.filter((h) => h.vacuna_id === vacuna.id).map((h) => h.numero_dosis)) + 1
     : 0;
@@ -100,6 +132,7 @@ export default function RegistrarVacunacion({
         paciente_id: paciente.id, vacuna_id: vacuna.id, fecha_aplicacion: fecha,
         fecha_proxima_dosis: proxima || null, canal,
         externa, lugar_externo: externa ? lugar : null,
+        lote_id: loteId,
       }),
     });
     const json = await res.json();
@@ -117,6 +150,7 @@ export default function RegistrarVacunacion({
     setVacunaId("");
     setProximaManual(null);
     loadHistorial(paciente.id);
+    loadLotes(vacuna.id);
     router.refresh();
   }
 
@@ -221,6 +255,28 @@ export default function RegistrarVacunacion({
                 Se registrará la <strong>dosis {numeroDosis} de {vacuna.dosis_totales}</strong>
                 {esUltima && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">Última dosis</span>}
               </div>
+              {sinExistencias && (
+                <p className="flex items-start gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-700 ring-1 ring-red-200">
+                  <TriangleAlert size={18} className="mt-0.5 shrink-0" />
+                  <span>
+                    No hay dosis disponibles de {vacuna.nombre} en el inventario (sin existencias o lotes vencidos).
+                    Registra la entrada del nuevo lote en <strong>Inventario</strong> para poder aplicarla.
+                  </span>
+                </p>
+              )}
+              {llevaInventario && !sinExistencias && (
+                <label className="block space-y-1.5">
+                  <span className="flex items-center gap-1.5 text-sm font-medium text-slate-700"><Package size={14} /> Lote aplicado *</span>
+                  <select value={loteId ?? ""} onChange={(e) => setLoteElegido(e.target.value)} className={inputCls}>
+                    {disponibles.map((l) => (
+                      <option key={l.id} value={l.id}>
+                        {l.numero_lote}{l.laboratorio ? ` · ${l.laboratorio}` : ""} · vence {formatDay(l.fecha_vencimiento)} · {l.existencias} dosis
+                      </option>
+                    ))}
+                  </select>
+                  <span className="block text-xs text-slate-500">Sugerido: el lote que vence primero. Al registrar se descuenta 1 dosis.</span>
+                </label>
+              )}
               {!esUltima && (
                 <div className="grid gap-4 sm:grid-cols-2">
                   <label className="block space-y-1.5">
@@ -254,7 +310,7 @@ export default function RegistrarVacunacion({
           </p>
         )}
 
-        <button disabled={!paciente || !vacuna || completo || saving} className="btn-primary w-full justify-center py-3">
+        <button disabled={!paciente || !vacuna || completo || saving || sinExistencias || cargandoLotes} className="btn-primary w-full justify-center py-3">
           <Syringe size={16} /> {saving ? "Registrando…" : externa ? "Registrar dosis externa" : "Registrar vacunación"}
         </button>
       </form>
@@ -271,7 +327,7 @@ export default function RegistrarVacunacion({
                     <span className="text-slate-500">dosis {h.numero_dosis}/{h.vacuna.dosis_totales}</span>
                   </div>
                   <div className="text-xs text-slate-500">
-                    {h.externa ? `Externa · ${h.lugar_externo ?? "otro lugar"} · ` : "Aplicada "}{formatDay(h.fecha_aplicacion)}{h.fecha_proxima_dosis && ` · próxima ${formatDay(h.fecha_proxima_dosis)}`}
+                    {h.externa ? `Externa · ${h.lugar_externo ?? "otro lugar"} · ` : "Aplicada "}{formatDay(h.fecha_aplicacion)}{h.lote && ` · lote ${h.lote.numero_lote}`}{h.fecha_proxima_dosis && ` · próxima ${formatDay(h.fecha_proxima_dosis)}`}
                   </div>
                 </li>
               ))}

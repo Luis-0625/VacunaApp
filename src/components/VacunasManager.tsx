@@ -16,6 +16,7 @@ function VacunaForm({ vacuna, onSaved, onCancel }: { vacuna: Vacuna | null; onSa
     dosis_totales: String(vacuna?.dosis_totales ?? 1),
     intervalo_dias_recom_dosis: vacuna?.intervalo_dias_recom_dosis?.toString() ?? "",
     descripcion: vacuna?.descripcion ?? "",
+    stock_minimo: String(vacuna?.stock_minimo ?? 0),
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,6 +59,11 @@ function VacunaForm({ vacuna, onSaved, onCancel }: { vacuna: Vacuna | null; onSa
             className={`${inputCls} disabled:opacity-50`} />
         </label>
       </div>
+      <label className="block space-y-1.5">
+        <span className="text-sm font-medium text-slate-700">Existencias mínimas</span>
+        <input type="number" min={0} value={f.stock_minimo} onChange={set("stock_minimo")} className={`${inputCls} max-w-[160px]`} />
+        <span className="block text-xs text-slate-500">Alerta en Inventario cuando queden menos dosis. 0 = sin alerta.</span>
+      </label>
       <label className="block space-y-1.5">
         <span className="text-sm font-medium text-slate-700">Descripción</span>
         <textarea rows={2} value={f.descripcion} onChange={set("descripcion")} className={inputCls} />

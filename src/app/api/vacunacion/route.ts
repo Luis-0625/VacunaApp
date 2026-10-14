@@ -26,6 +26,8 @@ export async function POST(request: NextRequest) {
   const proximaIn = b?.fecha_proxima_dosis ? String(b.fecha_proxima_dosis) : null;
   // Dosis aplicada en otro lugar (registrada desde el carné físico del paciente)
   const externa = b?.externa === true;
+  // Lote del inventario: la base de datos exige uno vigente con existencias si la vacuna lleva inventario
+  const loteId = !externa && b?.lote_id ? String(b.lote_id) : null;
   const lugarExterno = externa ? String(b?.lugar_externo ?? "").trim() : "";
 
   if (!pacienteId || !vacunaId) return NextResponse.json({ error: "Selecciona paciente y vacuna" }, { status: 400 });
@@ -74,9 +76,11 @@ export async function POST(request: NextRequest) {
       fecha_aplicacion: fecha, fecha_proxima_dosis: proxima, estado: "COMPLETADA",
       aplicada_por: g.perfil.user_id, // en las externas: quién la registró
       externa, lugar_externo: lugarExterno || null,
+      lote_id: loteId,
     })
     .select("id").single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  // P0001: regla de inventario (sin lote, sin existencias o lote vencido) con mensaje para el usuario
+  if (error) return NextResponse.json({ error: error.message }, { status: error.code === "P0001" ? 409 : 500 });
 
   // El trigger crea el recordatorio (1 día antes); aquí se fija el canal elegido.
   if (proxima) await db.from("recordatorios").update({ canal }).eq("cita_id", cita.id);

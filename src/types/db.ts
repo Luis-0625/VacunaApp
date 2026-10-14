@@ -28,7 +28,26 @@ export interface Vacuna {
   dosis_totales: number;
   intervalo_dias_recom_dosis: number | null;
   descripcion: string | null;
+  /** Existencias mínimas antes de alertar (0 = sin alerta). */
+  stock_minimo: number;
 }
+
+/** Lote de una vacuna en el inventario del centro. */
+export interface Lote {
+  id: string;
+  vacuna_id: string;
+  numero_lote: string;
+  laboratorio: string | null;
+  fecha_vencimiento: string;
+  fecha_ingreso: string;
+  cantidad_inicial: number;
+  existencias: number;
+  costo_unitario: number | null;
+  created_at: string;
+}
+
+export type TipoMovimiento = "ENTRADA" | "APLICACION" | "BAJA" | "CONTEO" | "ANULACION";
+export type MotivoBaja = "VENCIDA" | "ROTURA" | "CADENA_FRIO" | "FRASCO_ABIERTO" | "OTRO";
 
 export interface CitaVacunacion {
   id: string;

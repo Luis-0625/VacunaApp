@@ -26,6 +26,7 @@ interface Dosis {
   fecha_proxima_dosis: string | null;
   externa: boolean;
   lugar_externo: string | null;
+  lote: { numero_lote: string } | null;
   vacuna: { nombre: string; dosis_totales: number };
 }
 
@@ -55,7 +56,7 @@ export default async function CarnePage(props: { params: Promise<{ token: string
 
   const [{ data: dosis }, est] = await Promise.all([
     db.from("citas_vacunacion")
-      .select("id, vacuna_id, numero_dosis, fecha_aplicacion, fecha_proxima_dosis, externa, lugar_externo, vacuna:vacunas!inner(nombre, dosis_totales)")
+      .select("id, vacuna_id, numero_dosis, fecha_aplicacion, fecha_proxima_dosis, externa, lugar_externo, lote:lotes(numero_lote), vacuna:vacunas!inner(nombre, dosis_totales)")
       .eq("paciente_id", paciente.id).neq("estado", "CANCELADA")
       .order("fecha_aplicacion").order("numero_dosis")
       .returns<Dosis[]>(),
@@ -134,6 +135,7 @@ export default async function CarnePage(props: { params: Promise<{ token: string
                             <span>Dosis {d.numero_dosis}</span>
                             <span className="tabular-nums">{formatFechaLarga(d.fecha_aplicacion)}</span>
                           </div>
+                          {d.lote && <div className="text-[11px] text-slate-400">Lote {d.lote.numero_lote}</div>}
                           {d.externa && (
                             <div className="text-[11px] text-amber-700">
                               Aplicada en {d.lugar_externo ?? "otro lugar"} · externa, no verificada por {est.nombre}
