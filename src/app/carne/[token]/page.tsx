@@ -5,7 +5,7 @@ import CarneAcciones from "@/components/CarneAcciones";
 import { LogoEstablecimiento } from "@/components/ui";
 import { formatFechaLarga, todayISO } from "@/lib/agenda";
 import { enmascararDocumento, urlCarne } from "@/lib/carne";
-import { getEstablecimiento } from "@/lib/establecimiento";
+import { getEstablecimiento, temaMarca } from "@/lib/establecimiento";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -50,7 +50,7 @@ export default async function CarnePage(props: { params: Promise<{ token: string
   // El acceso es por el token secreto: se consulta con el service role y solo se muestran datos mínimos
   const db = createAdminClient();
   const { data: paciente } = await db.from("pacientes")
-    .select("id, nombre_completo, documento_identidad").eq("carne_token", params.token).maybeSingle();
+    .select("id, nombre_completo, documento_identidad, centro_id").eq("carne_token", params.token).maybeSingle();
   if (!paciente) return <NoEncontrado />;
 
   const [{ data: dosis }, est] = await Promise.all([
@@ -59,8 +59,8 @@ export default async function CarnePage(props: { params: Promise<{ token: string
       .eq("paciente_id", paciente.id).neq("estado", "CANCELADA")
       .order("fecha_aplicacion").order("numero_dosis")
       .returns<Dosis[]>(),
-    getEstablecimiento(db),
-    db.from("carne_consultas").insert({ paciente_id: paciente.id }),
+    getEstablecimiento(db, paciente.centro_id),
+    db.from("carne_consultas").insert({ paciente_id: paciente.id, centro_id: paciente.centro_id }),
   ]);
 
   const url = urlCarne(params.token);
@@ -77,7 +77,7 @@ export default async function CarnePage(props: { params: Promise<{ token: string
   }).format(new Date());
 
   return (
-    <main className="min-h-screen px-4 py-8 print:p-0">
+    <main data-marca style={temaMarca(est.color) as React.CSSProperties} className="min-h-screen px-4 py-8 print:p-0">
       <div className="mx-auto max-w-lg space-y-4">
         <article className="card overflow-hidden print:border-slate-300 print:shadow-none">
           {/* Encabezado del centro */}

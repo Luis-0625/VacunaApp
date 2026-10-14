@@ -70,7 +70,7 @@ export default function EstablecimientoForm({ inicial }: { inicial: Establecimie
     setSubiendo(true);
     const supabase = createClient();
     const ext = file.type.split("/")[1].replace("jpeg", "jpg");
-    const path = `logo-${Date.now()}.${ext}`;
+    const path = `${inicial.id}/logo-${Date.now()}.${ext}`;
     const { error } = await supabase.storage.from("marca").upload(path, file, { cacheControl: "31536000" });
     setSubiendo(false);
     if (error) return setError(`No se pudo subir el logo: ${error.message}`);

@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
 
   let respuesta: string;
   try {
-    respuesta = await procesarMensajeEntrante(createAdminClient(), params.From ?? "", params.Body ?? "");
+    respuesta = await procesarMensajeEntrante(createAdminClient(), params.From ?? "", params.Body ?? "", params.To ?? "");
   } catch (e) {
     console.error("Webhook WhatsApp:", e);
     respuesta = "Tuvimos un problema procesando tu respuesta. Intenta de nuevo en unos minutos.";

@@ -8,5 +8,5 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   // /api/cron se autentica con CRON_SECRET; las demás rutas API validan sesión por sí mismas.
-  matcher: ["/dashboard/:path*"],
+  matcher: ["/dashboard/:path*", "/plataforma/:path*"],
 };

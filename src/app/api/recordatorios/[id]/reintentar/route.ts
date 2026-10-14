@@ -17,6 +17,7 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
     .from("recordatorios")
     .select(REMINDER_SELECT)
     .eq("id", params.id)
+    .eq("centro_id", g.perfil.centro_id)
     .maybeSingle<RecordatorioDetalle>();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

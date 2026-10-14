@@ -1,6 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+/** Datos y marca de un centro de vacunación (tabla `centros`). */
 export interface Establecimiento {
+  /** null = marca genérica de la plataforma (sin sesión o sin centro). */
+  id: string | null;
   nombre: string;
   nit: string | null;
   telefono: string | null;
@@ -13,22 +16,39 @@ export interface Establecimiento {
   color: ColorMarca;
   dias_atencion: number[];
   cupos_por_dia: number;
+  /** Número propio de WhatsApp del centro (whatsapp:+57...); null = el de la plataforma. */
+  whatsapp_from: string | null;
+  activo: boolean;
 }
 
+/** Marca de la plataforma: login y páginas sin un centro identificado. */
 export const ESTABLECIMIENTO_DEFAULT: Establecimiento = {
-  nombre: "Mi centro de vacunación",
+  id: null,
+  nombre: "VacunaApp",
   nit: null, telefono: null, email: null, direccion: null, ciudad: null, sitio_web: null, horario: null,
   logo_url: null,
   color: "azul",
   dias_atencion: [1, 2, 3, 4, 5, 6],
   cupos_por_dia: 0,
+  whatsapp_from: null,
+  activo: true,
 };
 
-/** Datos del establecimiento. Si la tabla aún no existe, devuelve los valores por defecto. */
-export async function getEstablecimiento(db: SupabaseClient): Promise<Establecimiento> {
-  const { data } = await db.from("establecimiento").select("*").maybeSingle();
-  if (!data) return ESTABLECIMIENTO_DEFAULT;
-  return { ...ESTABLECIMIENTO_DEFAULT, ...data, color: esColor(data.color) ? data.color : "azul" };
+/**
+ * Datos de un centro. Sin `centroId` usa las reglas de seguridad: con un cliente de sesión devuelve el
+ * centro del usuario. Con el cliente de service role siempre hay que indicar `centroId`.
+ */
+export async function getEstablecimiento(db: SupabaseClient, centroId?: string): Promise<Establecimiento> {
+  let q = db.from("centros").select("*");
+  if (centroId) q = q.eq("id", centroId);
+  const { data } = await q.limit(1).maybeSingle();
+  return data ? aEstablecimiento(data) : ESTABLECIMIENTO_DEFAULT;
+}
+
+/** Convierte una fila de `centros` en Establecimiento (con valores por defecto y color válido). */
+export function aEstablecimiento(fila: Record<string, unknown>): Establecimiento {
+  const e = { ...ESTABLECIMIENTO_DEFAULT, ...fila } as Establecimiento;
+  return { ...e, color: esColor(e.color) ? e.color : "azul" };
 }
 
 /** Pie de mensaje: "📍 Calle 10 #5-20, Montería · 🕒 Lun a sáb 7am-5pm · ☎ 3001234567". */

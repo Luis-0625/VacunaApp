@@ -28,7 +28,7 @@ export function formatFechaLarga(iso: string): string {
 export async function fechasDisponibles(
   db: SupabaseClient,
   despuesDe: string,
-  agenda: { dias_atencion: number[]; cupos_por_dia: number },
+  agenda: { id: string | null; dias_atencion: number[]; cupos_por_dia: number },
   cantidad = Number(process.env.REPROGRAMAR_OPCIONES ?? 4)
 ): Promise<string[]> {
   const dias = new Set(agenda.dias_atencion);
@@ -39,12 +39,14 @@ export async function fechasDisponibles(
 
   const ocupados = new Map<string, number>();
   if (cupos > 0) {
-    const { data, error } = await db
+    let q = db
       .from("citas_vacunacion")
       .select("fecha_proxima_dosis")
       .gte("fecha_proxima_dosis", desde)
       .lte("fecha_proxima_dosis", hasta)
       .neq("estado", "CANCELADA");
+    if (agenda.id) q = q.eq("centro_id", agenda.id);
+    const { data, error } = await q;
     if (error) throw new Error(error.message);
     for (const c of data ?? []) {
       const f = c.fecha_proxima_dosis as string;

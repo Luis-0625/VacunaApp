@@ -43,6 +43,7 @@ export interface CitaVacunacion {
 export interface Recordatorio {
   id: string;
   cita_id: string;
+  centro_id: string;
   estado_envio: EstadoEnvio;
   canal: CanalEnvio;
   fecha_programada: string;
@@ -67,6 +68,7 @@ export type Rol = "ADMIN" | "VACUNADOR";
 
 export interface Perfil {
   user_id: string;
+  centro_id: string;
   email: string;
   nombre: string;
   rol: Rol;

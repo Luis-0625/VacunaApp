@@ -28,7 +28,9 @@ export async function PATCH(request: NextRequest, ctx: { params: Promise<{ id: s
     return NextResponse.json({ error: "No puedes cambiar tu propio rol ni desactivarte" }, { status: 400 });
   }
 
-  const { error } = await createAdminClient().from("perfiles").update(update).eq("user_id", params.id);
+  const { data, error } = await createAdminClient().from("perfiles").update(update)
+    .eq("user_id", params.id).eq("centro_id", g.perfil.centro_id).select("user_id");
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!data?.length) return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
   return NextResponse.json({ ok: true });
 }

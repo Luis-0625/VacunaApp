@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
   const filas: DosisPendiente[] = [];
   for (let i = 0; i < ids.length; i += 150) {
     const { data, error } = await db.from("dosis_pendientes").select("*")
-      .in("cita_id", ids.slice(i, i + 150)).returns<DosisPendiente[]>();
+      .eq("centro_id", g.perfil.centro_id).in("cita_id", ids.slice(i, i + 150)).returns<DosisPendiente[]>();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     filas.push(...(data ?? []));
   }
@@ -53,14 +53,15 @@ export async function POST(request: NextRequest) {
   }
 
   const { data: campana, error: e1 } = await db.from("campanas")
-    .insert({ nombre, mensaje, creada_por: g.perfil.user_id }).select("id").single();
+    .insert({ nombre, mensaje, creada_por: g.perfil.user_id, centro_id: g.perfil.centro_id }).select("id").single();
   if (e1) return NextResponse.json({ error: e1.message }, { status: 500 });
 
-  const est = await getEstablecimiento(db);
+  const est = await getEstablecimiento(db, g.perfil.centro_id);
   const envios = destino.map((d) => {
     const v = variablesCampana(d, est.nombre);
     return {
       campana_id: campana.id,
+      centro_id: g.perfil.centro_id,
       paciente_id: d.paciente_id,
       cita_id: d.cita_id,
       telefono: d.telefono,

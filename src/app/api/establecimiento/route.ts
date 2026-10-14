@@ -51,11 +51,11 @@ export async function PUT(request: NextRequest) {
   if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 });
 
   const { data, error } = await (await createClient())
-    .from("establecimiento").update(parsed.data).eq("id", true).select().maybeSingle();
+    .from("centros").update(parsed.data).eq("id", g.perfil.centro_id).select().maybeSingle();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data) {
     return NextResponse.json(
-      { error: "No se encontró el establecimiento. Ejecuta supabase/establecimiento.sql en Supabase." },
+      { error: "No se encontró el centro o no tienes permiso para modificarlo" },
       { status: 404 }
     );
   }

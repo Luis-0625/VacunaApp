@@ -27,31 +27,65 @@ const listaVacunas = (rs: Detalle[]) =>
 export async function procesarMensajeEntrante(
   db: SupabaseClient,
   from: string,
-  body: string
+  body: string,
+  to = ""
 ): Promise<string> {
-  const est = await getEstablecimiento(db);
-  return `${await responder(db, est, from, body)}\n\n— ${est.nombre}`;
+  const telefono = toE164(from.replace(/^whatsapp:/i, ""), process.env.DEFAULT_COUNTRY_CODE ?? "57");
+  if (!telefono) return "No pudimos identificar tu número. Comunícate con tu centro de vacunación.";
+
+  const centroId = await resolverCentro(db, telefono, to);
+  if (!centroId) return "Hola 👋 No encontramos citas programadas con este número. Si necesitas ayuda, comunícate con tu centro de vacunación.";
+  const est = await getEstablecimiento(db, centroId);
+  if (!est.activo) return "Este servicio no está disponible en este momento. Comunícate con tu centro de vacunación.";
+  return `${await responder(db, est, centroId, telefono, body)}\n\n— ${est.nombre}`;
 }
 
-async function responder(db: SupabaseClient, est: Establecimiento, from: string, body: string): Promise<string> {
+/**
+ * Centro al que escribe el paciente: el dueño del número de WhatsApp de destino; si comparten el
+ * número de la plataforma, el centro que le escribió más recientemente; si no, el de su registro.
+ */
+async function resolverCentro(db: SupabaseClient, telefono: string, to: string): Promise<string | null> {
+  if (to) {
+    const { data } = await db.from("centros").select("id").eq("whatsapp_from", to).maybeSingle();
+    if (data) return data.id;
+  }
+  const [rec, camp] = await Promise.all([
+    db.from("recordatorios").select("centro_id, enviado_at, cita:citas_vacunacion!inner(paciente:pacientes!inner(telefono))")
+      .eq("cita.paciente.telefono", telefono).not("enviado_at", "is", null)
+      .order("enviado_at", { ascending: false }).limit(1).maybeSingle(),
+    db.from("campana_envios").select("centro_id, enviado_at")
+      .eq("telefono", telefono).not("enviado_at", "is", null)
+      .order("enviado_at", { ascending: false }).limit(1).maybeSingle(),
+  ]);
+  const ultimos = [rec.data, camp.data].filter((x): x is { centro_id: string; enviado_at: string } => !!x)
+    .sort((a, b) => Date.parse(b.enviado_at) - Date.parse(a.enviado_at));
+  if (ultimos.length) return ultimos[0].centro_id;
+
+  const { data: paciente } = await db.from("pacientes").select("centro_id")
+    .eq("telefono", telefono).order("created_at", { ascending: false }).limit(1).maybeSingle();
+  return paciente?.centro_id ?? null;
+}
+
+async function responder(
+  db: SupabaseClient, est: Establecimiento, centroId: string, telefono: string, body: string
+): Promise<string> {
   const contacto = datosContacto(est);
   const pie = contacto ? `\n\n${contacto}` : "";
-  const telefono = toE164(from.replace(/^whatsapp:/i, ""), process.env.DEFAULT_COUNTRY_CODE ?? "57");
-  if (!telefono) return "No pudimos identificar tu número. Comunícate con nosotros directamente.";
 
   // Autorización de mensajes (Ley 1581): el paciente puede retirarla o renovarla en cualquier momento
   const texto = normalizar(body);
   if (/^(salir|baja|stop|parar|detener|no mas mensajes)\b/.test(texto)) {
-    return cambiarAutorizacion(db, telefono, "NO_AUTORIZADO");
+    return cambiarAutorizacion(db, centroId, telefono, "NO_AUTORIZADO");
   }
   if (/^(alta|start|reanudar)\b/.test(texto)) {
-    return cambiarAutorizacion(db, telefono, "AUTORIZADO");
+    return cambiarAutorizacion(db, centroId, telefono, "AUTORIZADO");
   }
 
   const hoy = todayISO();
   const { data, error } = await db
     .from("recordatorios")
     .select(REMINDER_SELECT)
+    .eq("centro_id", centroId)
     .in("estado_envio", ["PENDIENTE", "ENVIADO"])
     .eq("cita.paciente.telefono", telefono)
     .gte("cita.fecha_proxima_dosis", hoy)
@@ -70,7 +104,7 @@ async function responder(db: SupabaseClient, est: Establecimiento, from: string,
       a.cita.fecha_proxima_dosis!.localeCompare(b.cita.fecha_proxima_dosis!));
 
   // Campaña de pacientes atrasados: se atiende si es el mensaje más reciente que recibió este número
-  const campana = await enviosCampanaActivos(db, telefono);
+  const campana = await enviosCampanaActivos(db, centroId, telefono);
   if (campana.length > 0 &&
       (activos.length === 0 || Date.parse(campana[0].enviado_at) >= Date.parse(activos[0].enviado_at ?? "0"))) {
     return responderCampana(db, est, campana, texto, hoy, pie);
@@ -118,10 +152,13 @@ async function responder(db: SupabaseClient, est: Establecimiento, from: string,
 }
 
 /** Aplica la autorización a todos los pacientes con ese teléfono (queda en autorizaciones_log). */
-async function cambiarAutorizacion(db: SupabaseClient, telefono: string, estado: AutorizaMensajes): Promise<string> {
+async function cambiarAutorizacion(
+  db: SupabaseClient, centroId: string, telefono: string, estado: AutorizaMensajes
+): Promise<string> {
   const { data, error } = await db
     .from("pacientes")
     .update({ autoriza_mensajes: estado, autorizacion_medio: "WHATSAPP" })
+    .eq("centro_id", centroId)
     .eq("telefono", telefono)
     .select("id");
   if (error) throw new Error(error.message);

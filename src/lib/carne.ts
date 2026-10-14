@@ -24,7 +24,7 @@ export function enmascararDocumento(doc: string): string {
  */
 export async function enviarCarne(db: SupabaseClient, pacienteId: string): Promise<void> {
   const { data: p, error } = await db.from("pacientes")
-    .select("nombre_completo, telefono, autoriza_mensajes, carne_token").eq("id", pacienteId).maybeSingle();
+    .select("nombre_completo, telefono, autoriza_mensajes, carne_token, centro_id").eq("id", pacienteId).maybeSingle();
   if (error) throw new Error(error.message);
   if (!p) throw new Error("Paciente no encontrado");
   if (p.autoriza_mensajes === "NO_AUTORIZADO") throw new Error("El paciente no autoriza recibir mensajes");
@@ -32,11 +32,12 @@ export async function enviarCarne(db: SupabaseClient, pacienteId: string): Promi
   const to = toE164(p.telefono, process.env.DEFAULT_COUNTRY_CODE ?? "57");
   if (!to) throw new Error(`Teléfono inválido (${p.telefono})`);
 
-  const est = await getEstablecimiento(db);
+  const est = await getEstablecimiento(db, p.centro_id);
   const nombre = p.nombre_completo.split(/\s+/)[0];
   const url = urlCarne(p.carne_token);
   await enviarWhatsApp({
     to,
+    from: est.whatsapp_from,
     contentSid: process.env.TWILIO_CARNE_CONTENT_SID,
     variables: { 1: nombre, 2: est.nombre, 3: url },
     body:

@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error?.message ?? "No se pudo crear el usuario" }, { status: 400 });
   }
 
-  const { error: pErr } = await admin.from("perfiles").insert({ user_id: created.user.id, email, nombre, rol });
+  const { error: pErr } = await admin.from("perfiles").insert({ user_id: created.user.id, email, nombre, rol, centro_id: g.perfil.centro_id });
   if (pErr) {
     await admin.auth.admin.deleteUser(created.user.id); // evita usuarios sin perfil
     return NextResponse.json({ error: pErr.message }, { status: 500 });

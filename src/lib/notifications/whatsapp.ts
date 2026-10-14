@@ -19,6 +19,8 @@ export interface ReminderMessageInput {
 export async function enviarWhatsApp(input: {
   to: string;
   body: string;
+  /** Número propio del centro (whatsapp:+57...). Si no se indica, se usa el de la plataforma. */
+  from?: string | null;
   contentSid?: string;
   variables?: Record<string, string>;
 }): Promise<void> {
@@ -27,7 +29,7 @@ export async function enviarWhatsApp(input: {
   if (!sid || !token) throw new Error("Credenciales de Twilio no configuradas");
 
   const useSms = process.env.TWILIO_USE_SMS === "true";
-  const fromRaw = useSms ? process.env.TWILIO_SMS_FROM : process.env.TWILIO_WHATSAPP_FROM;
+  const fromRaw = useSms ? process.env.TWILIO_SMS_FROM : input.from || process.env.TWILIO_WHATSAPP_FROM;
   if (!fromRaw) throw new Error(useSms ? "TWILIO_SMS_FROM no configurada" : "TWILIO_WHATSAPP_FROM no configurada");
 
   const client = twilio(sid, token);
@@ -59,6 +61,7 @@ export async function sendReminderWhatsApp(input: ReminderMessageInput): Promise
 
   await enviarWhatsApp({
     to: input.to,
+    from: est.whatsapp_from,
     contentSid: process.env.TWILIO_WHATSAPP_CONTENT_SID,
     variables: { 1: input.nombrePaciente, 2: fecha, 3: String(input.numeroDosis), 4: input.vacuna },
     body:

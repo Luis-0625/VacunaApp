@@ -85,6 +85,7 @@ export async function POST(request: NextRequest) {
     if (validos.has(doc)) return fail("Documento duplicado en el archivo");
 
     validos.set(doc, {
+      centro_id: g.perfil.centro_id,
       nombre_completo: nombre,
       documento_identidad: doc,
       email: emailRaw || null,
@@ -104,7 +105,7 @@ export async function POST(request: NextRequest) {
       const chunk = lote.slice(i, i + 500);
       const { error } = await db
         .from("pacientes")
-        .upsert(chunk, { onConflict: "documento_identidad" });
+        .upsert(chunk, { onConflict: "centro_id,documento_identidad" });
       if (error) {
         return NextResponse.json(
           { error: `Error al insertar: ${error.message}`, importados, errores },

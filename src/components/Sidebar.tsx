@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  BarChart3, BellRing, Building2, CalendarDays, Megaphone, ChevronsLeft, ChevronsRight, LayoutDashboard, LogOut, Pill, Syringe, UserCog, Users,
+  BarChart3, BellRing, Building2, CalendarDays, Globe, Megaphone, ChevronsLeft, ChevronsRight, LayoutDashboard, LogOut, Pill, Syringe, UserCog, Users,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Avatar, LogoEstablecimiento } from "@/components/ui";
@@ -37,13 +37,19 @@ const SECCIONES: { titulo: string; items: Item[] }[] = [
 ];
 
 export default function Sidebar({
-  nombre, rol, establecimiento,
-}: { nombre: string; rol: Rol; establecimiento: { nombre: string; ciudad: string | null; logo_url: string | null } }) {
+  nombre, rol, establecimiento, superadmin = false,
+}: {
+  nombre: string; rol: Rol; superadmin?: boolean;
+  establecimiento: { nombre: string; ciudad: string | null; logo_url: string | null };
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [colapsadoGuardado, guardarColapsado] = useLocalStorage("sidebar-collapsed", "0");
   const collapsed = colapsadoGuardado === "1";
-  const secciones = SECCIONES
+  const secciones = [
+    ...SECCIONES,
+    ...(superadmin ? [{ titulo: "VacunaApp", items: [{ href: "/plataforma", label: "Plataforma", icon: Globe, roles: [rol] }] }] : []),
+  ]
     .map((s) => ({ ...s, items: s.items.filter((l) => l.roles.includes(rol)) }))
     .filter((s) => s.items.length > 0);
   const links = secciones.flatMap((s) => s.items);

@@ -58,6 +58,7 @@ export function renderMensaje(plantilla: string, vars: Record<string, string>): 
 interface EnvioActivo {
   id: string;
   cita_id: string;
+  centro_id: string;
   enviado_at: string;
   respuesta: "ELIGIENDO" | null;
   opciones_fecha: string[] | null;
@@ -68,12 +69,13 @@ interface EnvioActivo {
 const VIGENCIA_DIAS = 15;
 
 /** Envíos de campaña que esperan respuesta de este teléfono (el más reciente primero). */
-export async function enviosCampanaActivos(db: SupabaseClient, telefono: string): Promise<EnvioActivo[]> {
+export async function enviosCampanaActivos(db: SupabaseClient, centroId: string, telefono: string): Promise<EnvioActivo[]> {
   const desde = new Date(Date.now() - VIGENCIA_DIAS * 86400000).toISOString();
   const { data, error } = await db
     .from("campana_envios")
-    .select(`id, cita_id, enviado_at, respuesta, opciones_fecha,
+    .select(`id, cita_id, centro_id, enviado_at, respuesta, opciones_fecha,
       cita:citas_vacunacion!inner (numero_dosis, paciente:pacientes!inner (nombre_completo), vacuna:vacunas!inner (nombre))`)
+    .eq("centro_id", centroId)
     .eq("telefono", telefono)
     .eq("estado", "ENVIADO")
     .or("respuesta.is.null,respuesta.eq.ELIGIENDO")
@@ -155,6 +157,7 @@ async function agendar(db: SupabaseClient, envios: EnvioActivo[], fecha: string,
     // Primero el recordatorio (el trigger de citas solo actualiza los PENDIENTE)
     const { error: e1 } = await db.from("recordatorios").upsert({
       cita_id: e.cita_id,
+      centro_id: e.centro_id,
       fecha_programada: programada,
       estado_envio: sinRecordatorio ? "ENVIADO" : "PENDIENTE",
       confirmacion: sinRecordatorio ? "CONFIRMADA" : null,

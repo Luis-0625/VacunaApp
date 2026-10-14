@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireApi } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { enviarWhatsApp } from "@/lib/notifications/whatsapp";
+import { getEstablecimiento } from "@/lib/establecimiento";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -19,6 +20,11 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
   if ("res" in g) return g.res;
   const db = createAdminClient();
 
+  const { data: campana } = await db.from("campanas").select("id, centro_id")
+    .eq("id", params.id).eq("centro_id", g.perfil.centro_id).maybeSingle();
+  if (!campana) return NextResponse.json({ error: "Campaña no encontrada" }, { status: 404 });
+  const est = await getEstablecimiento(db, campana.centro_id);
+
   const { data: lote, error } = await db.from("campana_envios")
     .select("id, telefono, mensaje, variables")
     .eq("campana_id", params.id).eq("estado", "PENDIENTE").limit(LOTE);
@@ -28,6 +34,7 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
     try {
       await enviarWhatsApp({
         to: e.telefono,
+        from: est.whatsapp_from,
         body: e.mensaje,
         contentSid: process.env.TWILIO_CAMPANA_CONTENT_SID,
         variables: e.variables as Record<string, string>,

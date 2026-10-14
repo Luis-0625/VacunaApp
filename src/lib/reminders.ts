@@ -31,7 +31,7 @@ export async function processReminder(
     errors.push("El paciente no autoriza recibir mensajes (Ley 1581)");
   } else {
     const base = {
-      establecimiento: establecimiento ?? (await getEstablecimiento(db)),
+      establecimiento: establecimiento ?? (await getEstablecimiento(db, r.centro_id)),
       nombrePaciente: cita.paciente.nombre_completo,
       vacuna: cita.vacuna.nombre,
       numeroDosis: cita.numero_dosis,
