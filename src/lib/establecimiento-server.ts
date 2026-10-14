@@ -5,7 +5,7 @@ import { ESTABLECIMIENTO_DEFAULT, getEstablecimiento, type Establecimiento } fro
 /** Establecimiento para Server Components (una consulta por petición). */
 export const getEstablecimientoActual = cache(async (): Promise<Establecimiento> => {
   try {
-    return await getEstablecimiento(createClient());
+    return await getEstablecimiento(await createClient());
   } catch {
     return ESTABLECIMIENTO_DEFAULT;
   }

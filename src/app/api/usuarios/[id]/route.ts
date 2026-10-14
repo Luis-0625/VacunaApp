@@ -5,7 +5,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export const dynamic = "force-dynamic";
 
 /** Cambia rol, estado o nombre de un usuario. Solo ADMIN; no puede modificar su propio rol/estado. */
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  const params = await ctx.params;
   const g = await requireApi(["ADMIN"]);
   if ("res" in g) return g.res;
 

@@ -97,6 +97,7 @@ export default function AgendaCitas() {
 
   // Tiempo real: las respuestas por WhatsApp aparecen sin recargar.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- carga remota: el estado cambia al llegar la respuesta
     load();
     const supabase = createClient();
     const channel = supabase

@@ -6,7 +6,7 @@ import type { Perfil, Rol } from "@/types/db";
 
 /** Perfil (rol) del usuario autenticado, o null si no tiene perfil activo. */
 export const getPerfil = cache(async (): Promise<Perfil | null> => {
-  const db = createClient();
+  const db = await createClient();
   const { data: { user } } = await db.auth.getUser();
   if (!user) return null;
   const { data } = await db.from("perfiles").select("*").eq("user_id", user.id).eq("activo", true).maybeSingle<Perfil>();

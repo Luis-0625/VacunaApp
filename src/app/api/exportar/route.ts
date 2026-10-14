@@ -22,7 +22,7 @@ interface RecRow extends Recordatorio {
 export async function GET() {
   const g = await requireApi(["ADMIN"]);
   if ("res" in g) return g.res;
-  const db = createClient();
+  const db = await createClient();
 
   try {
     const [pacientes, vacunas, citas, recs, perfiles] = await Promise.all([

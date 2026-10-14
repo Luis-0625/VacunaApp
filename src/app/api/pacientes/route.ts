@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export async function POST(request: NextRequest) {
   const g = await requireApi();
   if ("res" in g) return g.res;
-  const db = createClient();
+  const db = await createClient();
 
   const parsed = parsePaciente(await request.json().catch(() => null));
   if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 });

@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { Printer, Share2 } from "lucide-react";
+
+const sinSuscripcion = () => () => {};
 
 /** Botones de imprimir/compartir del carné. Al imprimir se usa siempre el tema claro. */
 export default function CarneAcciones() {
-  const [puedeCompartir, setPuedeCompartir] = useState(false);
+  // El botón Compartir solo existe en el navegador (celulares); en el servidor se omite
+  const puedeCompartir = useSyncExternalStore(sinSuscripcion, () => "share" in navigator, () => false);
 
   useEffect(() => {
-    setPuedeCompartir(typeof navigator !== "undefined" && "share" in navigator);
     const html = document.documentElement;
     let eraOscuro = false;
     const antes = () => { eraOscuro = html.classList.contains("dark"); html.classList.remove("dark"); };

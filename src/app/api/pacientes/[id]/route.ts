@@ -5,12 +5,13 @@ import { DUPLICATE_MSG, parsePaciente } from "@/lib/pacientes";
 
 export const dynamic = "force-dynamic";
 
-type Ctx = { params: { id: string } };
+type Ctx = { params: Promise<{ id: string }> };
 
-export async function PATCH(request: NextRequest, { params }: Ctx) {
+export async function PATCH(request: NextRequest, ctx: Ctx) {
+  const params = await ctx.params;
   const g = await requireApi();
   if ("res" in g) return g.res;
-  const db = createClient();
+  const db = await createClient();
 
   const parsed = parsePaciente(await request.json().catch(() => null));
   if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 });
@@ -25,10 +26,11 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
   return NextResponse.json(data);
 }
 
-export async function DELETE(_req: NextRequest, { params }: Ctx) {
+export async function DELETE(_req: NextRequest, ctx: Ctx) {
+  const params = await ctx.params;
   const g = await requireApi(["ADMIN"]);
   if ("res" in g) return g.res;
-  const db = createClient();
+  const db = await createClient();
 
   const { error } = await db.from("pacientes").delete().eq("id", params.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

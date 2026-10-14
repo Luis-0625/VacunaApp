@@ -7,6 +7,6 @@ export const dynamic = "force-dynamic";
 
 export default async function VacunasPage() {
   await requirePerfilPage(["ADMIN"]);
-  const { data } = await createClient().from("vacunas").select("*").order("nombre").returns<Vacuna[]>();
+  const { data } = await (await createClient()).from("vacunas").select("*").order("nombre").returns<Vacuna[]>();
   return <VacunasManager vacunas={data ?? []} />;
 }

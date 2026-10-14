@@ -11,10 +11,11 @@ export const dynamic = "force-dynamic";
  *   { accion: "enviar" }  -> envía el enlace por WhatsApp
  *   { accion: "revocar" } -> genera un enlace nuevo; el anterior deja de funcionar
  */
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  const params = await ctx.params;
   const g = await requireApi();
   if ("res" in g) return g.res;
-  const db = createClient();
+  const db = await createClient();
   const { accion } = (await request.json().catch(() => ({}))) as { accion?: string };
 
   if (accion === "enviar") {

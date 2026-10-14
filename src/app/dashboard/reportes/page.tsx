@@ -39,9 +39,10 @@ function Bars({ data, empty }: { data: [string, number][]; empty: string }) {
   );
 }
 
-export default async function ReportesPage({ searchParams }: { searchParams: { dias?: string } }) {
+export default async function ReportesPage(props: { searchParams: Promise<{ dias?: string }> }) {
+  const searchParams = await props.searchParams;
   await requirePerfilPage(["ADMIN"]);
-  const db = createClient();
+  const db = await createClient();
   const dias = RANGOS.some((r) => String(r.dias) === searchParams.dias) ? Number(searchParams.dias) : 30;
   const hoy = addDays(tomorrowISO(), -1);
   const desde = dias === 0 ? "0000-01-01" : addDays(hoy, -dias + 1);

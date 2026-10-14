@@ -1,7 +1,8 @@
 import type { NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
-export function middleware(request: NextRequest) {
+/** Next 16: el antiguo middleware se llama "proxy". Refresca la sesión y protege /dashboard. */
+export function proxy(request: NextRequest) {
   return updateSession(request);
 }
 

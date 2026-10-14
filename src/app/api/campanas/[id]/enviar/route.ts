@@ -13,7 +13,8 @@ const LOTE = 20;
  * hasta que no queden pendientes, así ninguna petición supera el tiempo máximo de la función.
  * Plantilla de producción: TWILIO_CAMPANA_CONTENT_SID con {{1}} nombre, {{2}} vacuna, {{3}} dosis, {{4}} fecha.
  */
-export async function POST(_req: Request, { params }: { params: { id: string } }) {
+export async function POST(_req: Request, ctx: { params: Promise<{ id: string }> }) {
+  const params = await ctx.params;
   const g = await requireApi(["ADMIN"]);
   if ("res" in g) return g.res;
   const db = createAdminClient();

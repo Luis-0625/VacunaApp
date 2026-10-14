@@ -38,6 +38,7 @@ export default function MonitorRecordatorios() {
 
   // Tiempo real: suscripción a cambios + refresco periódico de respaldo.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- carga remota: el estado cambia al llegar la respuesta
     load();
     const supabase = createClient();
     const channel = supabase

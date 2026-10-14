@@ -50,7 +50,7 @@ export async function PUT(request: NextRequest) {
   const parsed = parse(await request.json().catch(() => null));
   if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 });
 
-  const { data, error } = await createClient()
+  const { data, error } = await (await createClient())
     .from("establecimiento").update(parsed.data).eq("id", true).select().maybeSingle();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data) {

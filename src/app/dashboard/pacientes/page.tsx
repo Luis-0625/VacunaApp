@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export default async function PacientesPage() {
   const perfil = await requirePerfilPage();
-  const db = createClient();
+  const db = await createClient();
   let pacientes: Paciente[] = [];
   let error: string | null = null;
   try {

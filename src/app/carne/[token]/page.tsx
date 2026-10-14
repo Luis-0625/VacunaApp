@@ -43,7 +43,8 @@ function NoEncontrado() {
   );
 }
 
-export default async function CarnePage({ params }: { params: { token: string } }) {
+export default async function CarnePage(props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
   if (!TOKEN.test(params.token)) return <NoEncontrado />;
 
   // El acceso es por el token secreto: se consulta con el service role y solo se muestran datos mínimos

@@ -12,7 +12,7 @@ export const metadata = { title: "Atrasados" };
 
 export default async function AtrasadosPage() {
   const perfil = await requirePerfilPage();
-  const db = createClient();
+  const db = await createClient();
   const hoy = todayISO();
 
   const [atrasados, campanas, est] = await Promise.all([

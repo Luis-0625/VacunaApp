@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Monitor, Moon, Sun } from "lucide-react";
 import { CLAVE_TEMA as CLAVE, type Tema } from "@/lib/tema";
+import { useLocalStorage } from "@/lib/use-local-storage";
 
 const OPCIONES: { id: Tema; label: string; icon: typeof Sun }[] = [
   { id: "claro", label: "Claro", icon: Sun },
@@ -10,30 +10,15 @@ const OPCIONES: { id: Tema; label: string; icon: typeof Sun }[] = [
   { id: "sistema", label: "Sistema", icon: Monitor },
 ];
 
-function leer(): Tema {
-  try {
-    const t = localStorage.getItem(CLAVE);
-    return t === "oscuro" || t === "sistema" ? t : "claro";
-  } catch {
-    return "claro";
-  }
-}
-
-function guardar(t: Tema) {
-  try { localStorage.setItem(CLAVE, t); } catch { /* sin almacenamiento: solo esta sesión */ }
-  const w = window as unknown as { __aplicarTema?: () => void };
-  if (w.__aplicarTema) w.__aplicarTema();
-  else document.documentElement.classList.toggle("dark", t === "oscuro");
-}
-
 /** Selector Claro / Oscuro / Sistema. `compacto` muestra un solo botón que alterna. */
 export default function SelectorTema({ compacto = false }: { compacto?: boolean }) {
-  const [tema, setTema] = useState<Tema>("claro");
-  useEffect(() => setTema(leer()), []);
+  const [guardado, guardar] = useLocalStorage(CLAVE, "claro");
+  const tema: Tema = guardado === "oscuro" || guardado === "sistema" ? guardado : "claro";
 
   function elegir(t: Tema) {
-    setTema(t);
     guardar(t);
+    const oscuro = t === "oscuro" || (t === "sistema" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    document.documentElement.classList.toggle("dark", oscuro);
   }
 
   if (compacto) {

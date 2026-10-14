@@ -49,7 +49,9 @@ export default function RegistrarVacunacion({
   const [fecha, setFecha] = useState(todayLocal);
   const [proximaManual, setProximaManual] = useState<string | null>(null);
   const [canal, setCanal] = useState<CanalEnvio>("AMBOS");
-  const [historial, setHistorial] = useState<HistorialItem[]>([]);
+  // Historial etiquetado con el paciente al que pertenece: al cambiar de paciente nunca se usa el anterior
+  const [historialDe, setHistorialDe] = useState<{ pacienteId: string; items: HistorialItem[] } | null>(null);
+  const historial = paciente && historialDe?.pacienteId === paciente.id ? historialDe.items : [];
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
@@ -67,12 +69,12 @@ export default function RegistrarVacunacion({
       .eq("paciente_id", id).neq("estado", "CANCELADA")
       .order("fecha_aplicacion", { ascending: false })
       .returns<HistorialItem[]>();
-    setHistorial(data ?? []);
+    setHistorialDe({ pacienteId: id, items: data ?? [] });
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- carga remota: el estado cambia al llegar la respuesta
     if (paciente) loadHistorial(paciente.id);
-    else setHistorial([]);
   }, [paciente, loadHistorial]);
 
   const vacuna = vacunas.find((v) => v.id === vacunaId) ?? null;

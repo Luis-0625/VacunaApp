@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -9,6 +8,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { Avatar, LogoEstablecimiento } from "@/components/ui";
 import SelectorTema from "@/components/SelectorTema";
+import { useLocalStorage } from "@/lib/use-local-storage";
 import type { Rol } from "@/types/db";
 
 type Item = { href: string; label: string; icon: typeof Users; roles: Rol[] };
@@ -41,21 +41,15 @@ export default function Sidebar({
 }: { nombre: string; rol: Rol; establecimiento: { nombre: string; ciudad: string | null; logo_url: string | null } }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [collapsed, setCollapsed] = useState(false);
+  const [colapsadoGuardado, guardarColapsado] = useLocalStorage("sidebar-collapsed", "0");
+  const collapsed = colapsadoGuardado === "1";
   const secciones = SECCIONES
     .map((s) => ({ ...s, items: s.items.filter((l) => l.roles.includes(rol)) }))
     .filter((s) => s.items.length > 0);
   const links = secciones.flatMap((s) => s.items);
 
-  useEffect(() => {
-    try { setCollapsed(localStorage.getItem("sidebar-collapsed") === "1"); } catch { /* sin almacenamiento */ }
-  }, []);
-
   function toggle() {
-    setCollapsed((v) => {
-      try { localStorage.setItem("sidebar-collapsed", v ? "0" : "1"); } catch { /* sin almacenamiento */ }
-      return !v;
-    });
+    guardarColapsado(collapsed ? "0" : "1");
   }
 
   async function logout() {

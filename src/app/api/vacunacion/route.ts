@@ -16,7 +16,7 @@ const addDays = (iso: string, n: number) =>
 export async function POST(request: NextRequest) {
   const g = await requireApi();
   if ("res" in g) return g.res;
-  const db = createClient();
+  const db = await createClient();
 
   const b = await request.json().catch(() => null);
   const pacienteId = String(b?.paciente_id ?? "");

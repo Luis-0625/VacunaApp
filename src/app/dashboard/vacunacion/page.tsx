@@ -6,8 +6,9 @@ import { PageHeader } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
-export default async function VacunacionPage({ searchParams }: { searchParams: { paciente?: string; vacuna?: string; externa?: string } }) {
-  const db = createClient();
+export default async function VacunacionPage(props: { searchParams: Promise<{ paciente?: string; vacuna?: string; externa?: string }> }) {
+  const searchParams = await props.searchParams;
+  const db = await createClient();
   const [pacientes, vacunas, recientes] = await Promise.all([
     fetchAll<PacienteLite>((f, t) =>
       db.from("pacientes").select("id, nombre_completo, documento_identidad").order("nombre_completo").order("id").range(f, t).returns<PacienteLite[]>()

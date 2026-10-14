@@ -7,7 +7,8 @@ import type { RecordatorioDetalle } from "@/types/db";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(_req: Request, { params }: { params: { id: string } }) {
+export async function POST(_req: Request, ctx: { params: Promise<{ id: string }> }) {
+  const params = await ctx.params;
   const g = await requireApi();
   if ("res" in g) return g.res;
 

@@ -22,7 +22,7 @@ interface UltimoEnvio {
 }
 
 export default async function DashboardPage() {
-  const db = createClient();
+  const db = await createClient();
   const manana = tomorrowISO();
   const hoy = new Date(Date.parse(`${manana}T00:00:00Z`) - 86400000).toISOString().slice(0, 10);
   const en7 = new Date(Date.parse(`${hoy}T00:00:00Z`) + 7 * 86400000).toISOString().slice(0, 10);
