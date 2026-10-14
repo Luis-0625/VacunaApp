@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireApi } from "@/lib/auth";
 import { tomorrowISO } from "@/lib/reminders";
+import { enviarCarne } from "@/lib/carne";
 import type { CanalEnvio } from "@/types/db";
 
 export const dynamic = "force-dynamic";
@@ -77,10 +78,20 @@ export async function POST(request: NextRequest) {
     await db.from("recordatorios").delete().in("cita_id", previasIds).eq("estado_envio", "PENDIENTE");
   }
 
+  // Carné digital actualizado por WhatsApp; si falla, la vacunación ya quedó registrada igual.
+  let carne: { enviado: true } | { enviado: false; error: string };
+  try {
+    await enviarCarne(db, pacienteId);
+    carne = { enviado: true };
+  } catch (e) {
+    carne = { enviado: false, error: (e as Error).message };
+  }
+
   return NextResponse.json({
     numero_dosis: numeroDosis,
     dosis_totales: vacuna.dosis_totales,
     fecha_proxima_dosis: proxima,
     recordatorio_para: proxima ? addDays(proxima, -1) : null,
+    carne,
   }, { status: 201 });
 }

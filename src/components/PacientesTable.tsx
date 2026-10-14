@@ -2,11 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Download, FileSpreadsheet, FileText, Mail, Pencil, Phone, Plus, Search, Trash2, Upload } from "lucide-react";
+import { Download, FileSpreadsheet, FileText, IdCard, Mail, Pencil, Phone, Plus, Search, Trash2, Upload } from "lucide-react";
 import Modal from "@/components/Modal";
 import type { Paciente } from "@/types/db";
 import ImportarExcel from "@/components/ImportarExcel";
 import PacienteForm from "@/components/PacienteForm";
+import CarneModal from "@/components/CarneModal";
 import { AutorizacionBadge, Avatar, PageHeader } from "@/components/ui";
 import { exportPacientes } from "@/lib/export";
 
@@ -19,6 +20,7 @@ export default function PacientesTable({ pacientes, esAdmin }: { pacientes: Paci
   const [showImport, setShowImport] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [editing, setEditing] = useState<Paciente | "new" | null>(null);
+  const [carne, setCarne] = useState<Paciente | null>(null);
   const [deleting, setDeleting] = useState<Paciente | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -131,6 +133,8 @@ export default function PacientesTable({ pacientes, esAdmin }: { pacientes: Paci
                   <td className="td text-slate-600">{p.fecha_nacimiento ?? "—"}</td>
                   <td className="td">
                     <div className="flex justify-end gap-1">
+                      <button onClick={() => setCarne(p)} aria-label="Carné digital" title="Carné digital"
+                        className="rounded-lg p-2 text-slate-500 hover:bg-brand-50 hover:text-brand-700"><IdCard size={16} /></button>
                       <button onClick={() => setEditing(p)} aria-label="Editar" title="Editar"
                         className="rounded-lg p-2 text-slate-500 hover:bg-brand-50 hover:text-brand-700"><Pencil size={16} /></button>
                       {esAdmin && (
@@ -160,6 +164,9 @@ export default function PacientesTable({ pacientes, esAdmin }: { pacientes: Paci
         </footer>
       </div>
 
+      {carne && (
+        <CarneModal paciente={carne} onClose={() => setCarne(null)} onTokenChange={() => router.refresh()} />
+      )}
       {editing && (
         <Modal title={editing === "new" ? "Nuevo paciente" : "Editar paciente"} onClose={() => setEditing(null)}>
           <PacienteForm

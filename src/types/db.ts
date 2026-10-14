@@ -18,6 +18,8 @@ export interface Paciente {
   autoriza_mensajes: AutorizaMensajes | null;
   autorizacion_fecha: string | null;
   autorizacion_medio: MedioAutorizacion | null;
+  /** Enlace secreto del carné digital: /carne/<carne_token>. */
+  carne_token: string;
 }
 
 export interface Vacuna {

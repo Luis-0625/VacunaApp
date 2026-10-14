@@ -99,7 +99,8 @@ export default function RegistrarVacunacion({
       `${vacuna.nombre} · dosis ${json.numero_dosis} de ${json.dosis_totales} registrada para ${paciente.nombre_completo}. ` +
       (json.fecha_proxima_dosis
         ? `Próxima dosis: ${formatDay(json.fecha_proxima_dosis)} (recordatorio el ${formatDay(json.recordatorio_para)}).`
-        : "Esquema completo.")
+        : "Esquema completo.") +
+      (json.carne?.enviado ? " Carné digital enviado por WhatsApp." : json.carne ? ` El carné no se envió: ${json.carne.error}.` : "")
     );
     setVacunaId("");
     setProximaManual(null);
