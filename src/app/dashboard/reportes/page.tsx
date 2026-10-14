@@ -31,7 +31,7 @@ function Bars({ data, empty }: { data: [string, number][]; empty: string }) {
         <li key={label}>
           <div className="mb-1 flex justify-between text-sm"><span className="truncate">{label}</span><span className="font-medium tabular-nums">{n}</span></div>
           <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-            <div className="h-full rounded-full bg-gradient-to-r from-teal-500 to-emerald-500" style={{ width: `${(n / max) * 100}%` }} />
+            <div className="h-full rounded-full bg-brand-500" style={{ width: `${(n / max) * 100}%` }} />
           </div>
         </li>
       ))}
@@ -110,8 +110,8 @@ export default async function ReportesPage({ searchParams }: { searchParams: { d
       <div className="mb-6 flex flex-wrap gap-2">
         {RANGOS.map((r) => (
           <Link key={r.dias} href={`/dashboard/reportes?dias=${r.dias}`}
-            className={`rounded-xl px-4 py-2 text-sm font-medium ring-1 ring-inset transition ${
-              r.dias === dias ? "bg-teal-600 text-white ring-teal-600" : "bg-white text-slate-600 ring-slate-200 hover:bg-slate-50"
+            className={`rounded-lg px-4 py-2 text-sm font-medium ring-1 ring-inset transition ${
+              r.dias === dias ? "bg-brand-600 text-white ring-brand-600" : "bg-surface text-slate-600 ring-slate-200 hover:bg-slate-50"
             }`}>
             {r.label}
           </Link>
@@ -121,7 +121,7 @@ export default async function ReportesPage({ searchParams }: { searchParams: { d
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {kpis.map(({ label, value, icon: Icon }) => (
           <div key={label} className="card flex items-center gap-4 p-5">
-            <div className="grid h-12 w-12 place-items-center rounded-xl bg-teal-50 text-teal-700"><Icon size={22} /></div>
+            <div className="grid h-12 w-12 place-items-center rounded-lg bg-brand-50 text-brand-700"><Icon size={22} /></div>
             <div>
               <div className="text-3xl font-semibold tabular-nums">{value}</div>
               <div className="text-sm text-slate-500">{label}</div>
@@ -146,7 +146,7 @@ export default async function ReportesPage({ searchParams }: { searchParams: { d
             {porDia.map(([d, n]) => (
               <div key={d} className="flex flex-1 flex-col items-center justify-end gap-1" title={`${formatDay(d)}: ${n}`}>
                 <span className="text-[10px] tabular-nums text-slate-500">{n || ""}</span>
-                <div className="w-full rounded-t-md bg-gradient-to-t from-teal-500 to-emerald-400" style={{ height: `${Math.max(n ? 6 : 2, (n / maxDia) * 100)}%`, opacity: n ? 1 : 0.25 }} />
+                <div className="w-full rounded-t-md bg-brand-500" style={{ height: `${Math.max(n ? 6 : 2, (n / maxDia) * 100)}%`, opacity: n ? 1 : 0.25 }} />
                 <span className="text-[10px] text-slate-400">{d.slice(8)}</span>
               </div>
             ))}

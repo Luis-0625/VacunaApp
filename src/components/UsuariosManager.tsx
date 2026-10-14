@@ -8,7 +8,7 @@ import Modal from "@/components/Modal";
 import { Avatar, PageHeader } from "@/components/ui";
 
 const inputCls =
-  "w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-500/15";
+  "input";
 
 const ROLES: { value: Rol; label: string }[] = [
   { value: "VACUNADOR", label: "Vacunador / Enfermero" },
@@ -62,7 +62,7 @@ function NuevoUsuario({ onSaved, onCancel }: { onSaved: () => void; onCancel: ()
       </div>
       {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-red-200">{error}</p>}
       <div className="flex justify-end gap-2 pt-2">
-        <button type="button" onClick={onCancel} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm hover:bg-slate-50">Cancelar</button>
+        <button type="button" onClick={onCancel} className="btn-secondary">Cancelar</button>
         <button disabled={saving} className="btn-primary">{saving ? "Creando…" : "Crear usuario"}</button>
       </div>
     </form>
@@ -104,12 +104,12 @@ export default function UsuariosManager({ usuarios, yoId }: { usuarios: Perfil[]
             {usuarios.map((u) => {
               const soyYo = u.user_id === yoId;
               return (
-                <tr key={u.user_id} className="hover:bg-teal-50/40">
+                <tr key={u.user_id} className="hover:bg-brand-50/40">
                   <td className="td">
                     <div className="flex items-center gap-3">
                       <Avatar name={u.nombre} />
                       <div>
-                        <div className="font-medium">{u.nombre}{soyYo && <span className="ml-2 text-xs text-teal-600">(tú)</span>}</div>
+                        <div className="font-medium">{u.nombre}{soyYo && <span className="ml-2 text-xs text-brand-600">(tú)</span>}</div>
                         <div className="text-xs text-slate-500">{u.email}</div>
                       </div>
                     </div>
@@ -117,7 +117,7 @@ export default function UsuariosManager({ usuarios, yoId }: { usuarios: Perfil[]
                   <td className="td">
                     <select value={u.rol} disabled={soyYo || busyId === u.user_id}
                       onChange={(e) => patch(u.user_id, { rol: e.target.value })}
-                      className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm disabled:opacity-60">
+                      className="rounded-lg border border-slate-200 bg-surface px-2.5 py-1.5 text-sm disabled:opacity-60">
                       {ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
                     </select>
                   </td>

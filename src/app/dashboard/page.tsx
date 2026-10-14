@@ -1,8 +1,8 @@
 import { CalendarClock, MailCheck, Syringe, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { tomorrowISO } from "@/lib/reminders";
-import { Avatar, formatDay, PageHeader, StatusBadge, STATUS_STYLES } from "@/components/ui";
-import type { EstadoEnvio } from "@/types/db";
+import { Avatar, ConfirmacionBadge, formatDay, PageHeader, StatusBadge, STATUS_STYLES } from "@/components/ui";
+import type { Confirmacion, EstadoEnvio } from "@/types/db";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +12,7 @@ interface ProximaCita {
   fecha_proxima_dosis: string;
   paciente: { nombre_completo: string; telefono: string };
   vacuna: { nombre: string };
+  recordatorio: { confirmacion: Confirmacion | null; reprogramaciones: number } | null;
 }
 interface UltimoEnvio {
   id: string;
@@ -34,7 +35,7 @@ export default async function DashboardPage() {
     db.from("pacientes").select("id", { count: "exact", head: true }),
     count("PENDIENTE"), count("ENVIADO"), count("FALLIDO"),
     db.from("citas_vacunacion")
-      .select("id, numero_dosis, fecha_proxima_dosis, paciente:pacientes!inner(nombre_completo, telefono), vacuna:vacunas!inner(nombre)")
+      .select("id, numero_dosis, fecha_proxima_dosis, paciente:pacientes!inner(nombre_completo, telefono), vacuna:vacunas!inner(nombre), recordatorio:recordatorios(confirmacion, reprogramaciones)")
       .gte("fecha_proxima_dosis", hoy).lte("fecha_proxima_dosis", en7).neq("estado", "CANCELADA")
       .order("fecha_proxima_dosis").limit(8).returns<ProximaCita[]>(),
     db.from("recordatorios")
@@ -48,10 +49,10 @@ export default async function DashboardPage() {
   const pct = nEnv + nFail > 0 ? Math.round((nEnv / (nEnv + nFail)) * 100) : null;
 
   const kpis = [
-    { label: "Citas de mañana", value: citasManana.count ?? 0, icon: CalendarClock, tone: "from-teal-500 to-emerald-600" },
-    { label: "Total de pacientes", value: pacientes.count ?? 0, icon: Users, tone: "from-sky-500 to-blue-600" },
-    { label: "Recordatorios entregados", value: pct === null ? "—" : `${pct}%`, icon: MailCheck, tone: "from-violet-500 to-purple-600" },
-    { label: "Pendientes de envío", value: nPend, icon: Syringe, tone: "from-amber-500 to-orange-500" },
+    { label: "Citas de mañana", value: citasManana.count ?? 0, icon: CalendarClock, tone: "bg-brand-50 text-brand-600" },
+    { label: "Total de pacientes", value: pacientes.count ?? 0, icon: Users, tone: "bg-sky-50 text-sky-600" },
+    { label: "Recordatorios entregados", value: pct === null ? "—" : `${pct}%`, icon: MailCheck, tone: "bg-emerald-50 text-emerald-600" },
+    { label: "Pendientes de envío", value: nPend, icon: Syringe, tone: "bg-amber-50 text-amber-600" },
   ];
 
   const segments: { estado: EstadoEnvio; n: number }[] = [
@@ -65,11 +66,11 @@ export default async function DashboardPage() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {kpis.map(({ label, value, icon: Icon, tone }) => (
           <div key={label} className="card flex items-center gap-4 p-5">
-            <div className={`grid h-12 w-12 place-items-center rounded-xl bg-gradient-to-br text-white shadow-lg shadow-black/10 ${tone}`}>
+            <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-lg ${tone}`}>
               <Icon size={22} />
             </div>
             <div>
-              <div className="text-3xl font-semibold tabular-nums tracking-tight">{value}</div>
+              <div className="text-2xl font-semibold tabular-nums tracking-tight">{value}</div>
               <div className="text-sm text-slate-500">{label}</div>
             </div>
           </div>
@@ -93,9 +94,12 @@ export default async function DashboardPage() {
                 <div className="text-right">
                   <div className="text-sm font-medium">{formatDay(c.fecha_proxima_dosis)}</div>
                   {c.fecha_proxima_dosis === manana && (
-                    <span className="text-xs font-medium text-teal-600">Mañana</span>
+                    <span className="text-xs font-medium text-brand-600">Mañana</span>
                   )}
                 </div>
+                {(c.recordatorio?.confirmacion || (c.recordatorio?.reprogramaciones ?? 0) > 0) && (
+                  <ConfirmacionBadge confirmacion={c.recordatorio!.confirmacion ?? "REPROGRAMADA"} />
+                )}
               </li>
             ))}
             {(proximas.data ?? []).length === 0 && (

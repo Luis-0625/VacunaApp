@@ -22,7 +22,7 @@ const addDays = (iso: string, n: number) =>
 const todayLocal = () => new Date().toLocaleDateString("en-CA");
 
 const inputCls =
-  "w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-500/15";
+  "input";
 
 const CANALES: { value: CanalEnvio; label: string }[] = [
   { value: "AMBOS", label: "Email + WhatsApp" },
@@ -113,14 +113,14 @@ export default function RegistrarVacunacion({
         <div className="relative space-y-1.5">
           <span className="text-sm font-medium text-slate-700">Paciente *</span>
           {paciente ? (
-            <div className="flex items-center gap-3 rounded-xl border border-teal-200 bg-teal-50/50 p-3">
+            <div className="flex items-center gap-3 rounded-lg border border-brand-200 bg-brand-50/50 p-3">
               <Avatar name={paciente.nombre_completo} />
               <div className="min-w-0 flex-1">
                 <div className="truncate font-medium">{paciente.nombre_completo}</div>
                 <div className="text-xs text-slate-500">Doc. {paciente.documento_identidad}</div>
               </div>
               <button type="button" onClick={() => { setPaciente(null); setVacunaId(""); setOk(null); }}
-                className="text-sm text-teal-700 hover:underline">Cambiar</button>
+                className="text-sm text-brand-700 hover:underline">Cambiar</button>
             </div>
           ) : (
             <>
@@ -133,7 +133,7 @@ export default function RegistrarVacunacion({
                 <div className="card absolute z-20 mt-1 max-h-72 w-full overflow-y-auto py-1">
                   {matches.map((p) => (
                     <button type="button" key={p.id} onClick={() => { setPaciente(p); setOpen(false); setQuery(""); }}
-                      className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-teal-50">
+                      className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-brand-50">
                       <Avatar size="sm" name={p.nombre_completo} />
                       <span className="flex-1 truncate text-sm">{p.nombre_completo}</span>
                       <span className="text-xs text-slate-400">{p.documento_identidad}</span>
@@ -162,14 +162,14 @@ export default function RegistrarVacunacion({
 
         {vacuna && paciente && (
           completo ? (
-            <p className="flex items-start gap-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-800 ring-1 ring-amber-200">
+            <p className="flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-800 ring-1 ring-amber-200">
               <TriangleAlert size={18} className="mt-0.5 shrink-0" />
               Este paciente ya completó el esquema de {vacuna.nombre} ({vacuna.dosis_totales} dosis).
             </p>
           ) : (
-            <div className="space-y-4 rounded-xl bg-slate-50 p-4">
+            <div className="space-y-4 rounded-lg bg-slate-50 p-4">
               <div className="flex flex-wrap items-center gap-2 text-sm">
-                <Syringe size={16} className="text-teal-600" />
+                <Syringe size={16} className="text-brand-600" />
                 Se registrará la <strong>dosis {numeroDosis} de {vacuna.dosis_totales}</strong>
                 {esUltima && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">Última dosis</span>}
               </div>
@@ -191,7 +191,7 @@ export default function RegistrarVacunacion({
                 </div>
               )}
               {proxima && !esUltima && (
-                <p className="flex items-center gap-2 text-sm text-teal-700">
+                <p className="flex items-center gap-2 text-sm text-brand-700">
                   <BellRing size={16} /> Se avisará al paciente el <strong>{formatDay(addDays(proxima, -1))}</strong>, un día antes de su cita.
                 </p>
               )}
@@ -201,7 +201,7 @@ export default function RegistrarVacunacion({
 
         {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-red-200">{error}</p>}
         {ok && (
-          <p className="flex items-start gap-2 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800 ring-1 ring-emerald-200">
+          <p className="flex items-start gap-2 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800 ring-1 ring-emerald-200">
             <CheckCircle2 size={18} className="mt-0.5 shrink-0" /> {ok}
           </p>
         )}

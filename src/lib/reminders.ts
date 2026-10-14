@@ -2,14 +2,13 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { sendReminderEmail } from "@/lib/notifications/email";
 import { sendReminderWhatsApp } from "@/lib/notifications/whatsapp";
 import { toE164 } from "@/lib/phone";
+import { addDaysISO, todayISO } from "@/lib/agenda";
+import { getEstablecimiento, type Establecimiento } from "@/lib/establecimiento";
 import type { RecordatorioDetalle } from "@/types/db";
 
 /** Fecha de mañana (YYYY-MM-DD) en la zona horaria de la app. */
 export function tomorrowISO(timeZone = process.env.APP_TIMEZONE ?? "America/Bogota"): string {
-  const fmt = new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" });
-  const [y, m, d] = fmt.format(new Date()).split("-").map(Number);
-  const t = new Date(Date.UTC(y, m - 1, d + 1));
-  return t.toISOString().slice(0, 10);
+  return addDaysISO(todayISO(timeZone), 1);
 }
 
 /**
@@ -19,7 +18,8 @@ export function tomorrowISO(timeZone = process.env.APP_TIMEZONE ?? "America/Bogo
  */
 export async function processReminder(
   db: SupabaseClient,
-  r: RecordatorioDetalle
+  r: RecordatorioDetalle,
+  establecimiento?: Establecimiento
 ): Promise<{ id: string; ok: boolean; error?: string }> {
   const errors: string[] = [];
   let entregados = 0;
@@ -29,6 +29,7 @@ export async function processReminder(
     errors.push("Cita no encontrada");
   } else {
     const base = {
+      establecimiento: establecimiento ?? (await getEstablecimiento(db)),
       nombrePaciente: cita.paciente.nombre_completo,
       vacuna: cita.vacuna.nombre,
       numeroDosis: cita.numero_dosis,
@@ -65,6 +66,8 @@ export async function processReminder(
       estado_envio: ok ? "ENVIADO" : "FALLIDO",
       intentos: r.intentos + 1,
       ultimo_error: errors.length ? errors.join(" | ").slice(0, 500) : null,
+      // Abre una nueva conversación de confirmación con el paciente
+      ...(ok && { enviado_at: new Date().toISOString(), confirmacion: null, opciones_fecha: null }),
     })
     .eq("id", r.id);
 

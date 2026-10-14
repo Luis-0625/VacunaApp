@@ -4,27 +4,47 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  BarChart3, BellRing, ChevronsLeft, ChevronsRight, LayoutDashboard, LogOut, Pill, ShieldCheck, ShieldPlus, Syringe, UserCog, Users,
+  BarChart3, BellRing, Building2, CalendarDays, ChevronsLeft, ChevronsRight, LayoutDashboard, LogOut, Pill, Syringe, UserCog, Users,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { Avatar } from "@/components/ui";
+import { Avatar, LogoEstablecimiento } from "@/components/ui";
+import SelectorTema from "@/components/SelectorTema";
 import type { Rol } from "@/types/db";
 
-const LINKS: { href: string; label: string; icon: typeof Users; roles: Rol[] }[] = [
-  { href: "/dashboard", label: "Resumen", icon: LayoutDashboard, roles: ["ADMIN", "VACUNADOR"] },
-  { href: "/dashboard/vacunacion", label: "Vacunación", icon: Syringe, roles: ["ADMIN", "VACUNADOR"] },
-  { href: "/dashboard/pacientes", label: "Pacientes", icon: Users, roles: ["ADMIN", "VACUNADOR"] },
-  { href: "/dashboard/recordatorios", label: "Recordatorios", icon: BellRing, roles: ["ADMIN", "VACUNADOR"] },
-  { href: "/dashboard/vacunas", label: "Vacunas", icon: Pill, roles: ["ADMIN"] },
-  { href: "/dashboard/reportes", label: "Reportes", icon: BarChart3, roles: ["ADMIN"] },
-  { href: "/dashboard/usuarios", label: "Usuarios", icon: UserCog, roles: ["ADMIN"] },
+type Item = { href: string; label: string; icon: typeof Users; roles: Rol[] };
+
+const SECCIONES: { titulo: string; items: Item[] }[] = [
+  {
+    titulo: "Operación",
+    items: [
+      { href: "/dashboard", label: "Resumen", icon: LayoutDashboard, roles: ["ADMIN", "VACUNADOR"] },
+      { href: "/dashboard/agenda", label: "Agenda", icon: CalendarDays, roles: ["ADMIN", "VACUNADOR"] },
+      { href: "/dashboard/vacunacion", label: "Vacunación", icon: Syringe, roles: ["ADMIN", "VACUNADOR"] },
+      { href: "/dashboard/pacientes", label: "Pacientes", icon: Users, roles: ["ADMIN", "VACUNADOR"] },
+      { href: "/dashboard/recordatorios", label: "Recordatorios", icon: BellRing, roles: ["ADMIN", "VACUNADOR"] },
+    ],
+  },
+  {
+    titulo: "Administración",
+    items: [
+      { href: "/dashboard/vacunas", label: "Vacunas", icon: Pill, roles: ["ADMIN"] },
+      { href: "/dashboard/reportes", label: "Reportes", icon: BarChart3, roles: ["ADMIN"] },
+      { href: "/dashboard/usuarios", label: "Usuarios", icon: UserCog, roles: ["ADMIN"] },
+      { href: "/dashboard/establecimiento", label: "Establecimiento", icon: Building2, roles: ["ADMIN"] },
+    ],
+  },
 ];
 
-export default function Sidebar({ nombre, rol }: { nombre: string; rol: Rol }) {
+export default function Sidebar({
+  nombre, rol, establecimiento,
+}: { nombre: string; rol: Rol; establecimiento: { nombre: string; ciudad: string | null; logo_url: string | null } }) {
   const pathname = usePathname();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
-  const links = LINKS.filter((l) => l.roles.includes(rol));
+  const secciones = SECCIONES
+    .map((s) => ({ ...s, items: s.items.filter((l) => l.roles.includes(rol)) }))
+    .filter((s) => s.items.length > 0);
+  const links = secciones.flatMap((s) => s.items);
 
   useEffect(() => {
     try { setCollapsed(localStorage.getItem("sidebar-collapsed") === "1"); } catch { /* sin almacenamiento */ }
@@ -47,66 +67,74 @@ export default function Sidebar({ nombre, rol }: { nombre: string; rol: Rol }) {
 
   return (
     <>
-      <nav className="fixed inset-x-0 bottom-0 z-40 flex justify-around overflow-x-auto border-t border-slate-200 bg-white/95 py-2 backdrop-blur md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 flex justify-around overflow-x-auto border-t border-slate-200 bg-surface/95 py-2 backdrop-blur md:hidden">
         {links.map(({ href, label, icon: Icon }) => (
           <Link key={href} href={href}
-            className={`flex min-w-16 flex-col items-center gap-0.5 px-2 text-[11px] font-medium ${isActive(href) ? "text-teal-700" : "text-slate-500"}`}>
+            className={`flex min-w-16 flex-col items-center gap-0.5 px-2 text-[11px] font-medium ${isActive(href) ? "text-brand-700" : "text-slate-500"}`}>
             <Icon size={20} /> {label}
           </Link>
         ))}
       </nav>
 
       <aside
-        className={`sticky top-0 hidden h-screen shrink-0 flex-col bg-gradient-to-b from-teal-900 via-teal-900 to-emerald-950 p-3 text-teal-50 transition-[width] duration-200 md:flex ${
-          collapsed ? "w-[76px]" : "w-64"
+        className={`sticky top-0 hidden h-screen shrink-0 flex-col border-r border-slate-200 bg-surface transition-[width] duration-200 md:flex ${
+          collapsed ? "w-[72px]" : "w-64"
         }`}
       >
-        <div className={`mb-8 flex items-center ${collapsed ? "flex-col gap-3" : "justify-between px-2 pt-2"}`}>
-          <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/10 ring-1 ring-white/20">
-              <ShieldPlus size={22} />
+        <div className={`flex h-16 items-center border-b border-slate-200 ${collapsed ? "justify-center" : "gap-3 px-4"}`}>
+          <LogoEstablecimiento logoUrl={establecimiento.logo_url} nombre={establecimiento.nombre} />
+          {!collapsed && (
+            <div className="min-w-0">
+              <div className="truncate text-sm font-semibold leading-tight text-slate-900">{establecimiento.nombre}</div>
+              <div className="truncate text-xs text-slate-500">{establecimiento.ciudad ?? "Centro de vacunación"}</div>
             </div>
-            {!collapsed && (
-              <div>
-                <div className="text-lg font-semibold leading-none">VacunaApp</div>
-                <div className="mt-1 text-xs text-teal-200/70">Centro de vacunación</div>
-              </div>
-            )}
-          </div>
-          <button onClick={toggle} aria-label={collapsed ? "Expandir menú" : "Contraer menú"}
-            title={collapsed ? "Expandir menú" : "Contraer menú"}
-            className="rounded-lg p-1.5 text-teal-100/70 transition hover:bg-white/10 hover:text-white">
-            {collapsed ? <ChevronsRight size={18} /> : <ChevronsLeft size={18} />}
-          </button>
+          )}
         </div>
 
-        <nav className="space-y-1">
-          {links.map(({ href, label, icon: Icon }) => (
-            <Link key={href} href={href} title={collapsed ? label : undefined}
-              className={`flex items-center gap-3 rounded-xl py-2.5 text-sm font-medium transition ${collapsed ? "justify-center px-0" : "px-3.5"} ${
-                isActive(href) ? "bg-white/15 text-white shadow-inner ring-1 ring-white/15" : "text-teal-100/75 hover:bg-white/10 hover:text-white"
-              }`}>
-              <Icon size={18} className="shrink-0" /> {!collapsed && label}
-            </Link>
+        <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-5">
+          {secciones.map((s) => (
+            <div key={s.titulo}>
+              {!collapsed && (
+                <div className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">{s.titulo}</div>
+              )}
+              <div className="space-y-0.5">
+                {s.items.map(({ href, label, icon: Icon }) => (
+                  <Link key={href} href={href} title={collapsed ? label : undefined}
+                    className={`group relative flex items-center gap-3 rounded-lg py-2 text-sm font-medium transition ${collapsed ? "justify-center px-0" : "px-3"} ${
+                      isActive(href) ? "bg-brand-50 text-brand-700" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                    }`}>
+                    {isActive(href) && <span className="absolute inset-y-1.5 left-0 w-0.5 rounded-full bg-brand-600" />}
+                    <Icon size={18} className={`shrink-0 ${isActive(href) ? "text-brand-600" : "text-slate-400 group-hover:text-slate-600"}`} />
+                    {!collapsed && label}
+                  </Link>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
 
-        <div className="mt-auto space-y-2">
-          <div className={`flex items-center gap-3 rounded-xl bg-white/5 p-2.5 ${collapsed ? "justify-center" : ""}`} title={collapsed ? `${nombre} · ${rol}` : undefined}>
+        <div className="space-y-1 border-t border-slate-200 p-3">
+          {collapsed ? <div className="flex justify-center"><SelectorTema compacto /></div> : <SelectorTema />}
+          <div className={`flex items-center gap-3 rounded-lg p-2 ${collapsed ? "justify-center" : ""}`} title={collapsed ? `${nombre} · ${rol}` : undefined}>
             <Avatar size="sm" name={nombre} />
             {!collapsed && (
               <div className="min-w-0">
-                <div className="truncate text-sm font-medium text-white">{nombre}</div>
-                <div className="flex items-center gap-1 text-xs text-teal-200/70">
-                  {rol === "ADMIN" && <ShieldCheck size={12} />}{rol === "ADMIN" ? "Administrador" : "Vacunador"}
-                </div>
+                <div className="truncate text-sm font-medium text-slate-900">{nombre}</div>
+                <div className="text-xs text-slate-500">{rol === "ADMIN" ? "Administrador" : "Vacunador"}</div>
               </div>
             )}
           </div>
-          <button onClick={logout} title={collapsed ? "Cerrar sesión" : undefined}
-            className={`flex w-full items-center gap-3 rounded-xl py-2.5 text-sm text-teal-100/75 transition hover:bg-white/10 hover:text-white ${collapsed ? "justify-center" : "px-3.5"}`}>
-            <LogOut size={18} className="shrink-0" /> {!collapsed && "Cerrar sesión"}
-          </button>
+          <div className={`flex ${collapsed ? "flex-col items-center gap-1" : "gap-1"}`}>
+            <button onClick={logout} title="Cerrar sesión"
+              className={`flex items-center gap-2 rounded-lg py-2 text-sm text-slate-600 transition hover:bg-slate-50 hover:text-slate-900 ${collapsed ? "px-2" : "flex-1 px-3"}`}>
+              <LogOut size={16} className="shrink-0 text-slate-400" /> {!collapsed && "Cerrar sesión"}
+            </button>
+            <button onClick={toggle} aria-label={collapsed ? "Expandir menú" : "Contraer menú"}
+              title={collapsed ? "Expandir menú" : "Contraer menú"}
+              className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-50 hover:text-slate-700">
+              {collapsed ? <ChevronsRight size={16} /> : <ChevronsLeft size={16} />}
+            </button>
+          </div>
         </div>
       </aside>
     </>

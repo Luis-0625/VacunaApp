@@ -47,7 +47,7 @@ export default function PacientesTable({ pacientes, esAdmin }: { pacientes: Paci
   }
 
   const btnSecondary =
-    "inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50";
+    "inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-surface px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50";
 
   return (
     <div>
@@ -73,7 +73,7 @@ export default function PacientesTable({ pacientes, esAdmin }: { pacientes: Paci
                       <button key={fmt}
                         onClick={() => { exportPacientes(filtered, fmt); setShowExport(false); }}
                         className="flex w-full items-center gap-2 px-4 py-2.5 text-left hover:bg-slate-50">
-                        <Icon size={16} className="text-teal-600" /> {label}
+                        <Icon size={16} className="text-brand-600" /> {label}
                       </button>
                     ))}
                   </div>
@@ -100,7 +100,7 @@ export default function PacientesTable({ pacientes, esAdmin }: { pacientes: Paci
               value={q}
               onChange={(e) => { setQ(e.target.value); setPage(0); }}
               placeholder="Buscar por nombre, documento, email o teléfono"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-3 text-sm outline-none transition focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-500/15"
+              className="input pl-10"
             />
           </div>
         </div>
@@ -115,7 +115,7 @@ export default function PacientesTable({ pacientes, esAdmin }: { pacientes: Paci
             </thead>
             <tbody className="divide-y divide-slate-100">
               {rows.map((p) => (
-                <tr key={p.id} className="transition hover:bg-teal-50/40">
+                <tr key={p.id} className="transition hover:bg-brand-50/40">
                   <td className="td">
                     <div className="flex items-center gap-3">
                       <Avatar name={p.nombre_completo} />
@@ -131,7 +131,7 @@ export default function PacientesTable({ pacientes, esAdmin }: { pacientes: Paci
                   <td className="td">
                     <div className="flex justify-end gap-1">
                       <button onClick={() => setEditing(p)} aria-label="Editar" title="Editar"
-                        className="rounded-lg p-2 text-slate-500 hover:bg-teal-50 hover:text-teal-700"><Pencil size={16} /></button>
+                        className="rounded-lg p-2 text-slate-500 hover:bg-brand-50 hover:text-brand-700"><Pencil size={16} /></button>
                       {esAdmin && (
                       <button onClick={() => { setDeleteError(null); setDeleting(p); }} aria-label="Eliminar" title="Eliminar"
                         className="rounded-lg p-2 text-slate-500 hover:bg-red-50 hover:text-red-600"><Trash2 size={16} /></button>
@@ -182,9 +182,9 @@ export default function PacientesTable({ pacientes, esAdmin }: { pacientes: Paci
           </p>
           {deleteError && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{deleteError}</p>}
           <div className="mt-5 flex justify-end gap-2">
-            <button onClick={() => setDeleting(null)} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm hover:bg-slate-50">Cancelar</button>
+            <button onClick={() => setDeleting(null)} className="btn-secondary">Cancelar</button>
             <button onClick={confirmDelete} disabled={busy}
-              className="rounded-xl bg-red-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50">
+              className="rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50">
               {busy ? "Eliminando…" : "Eliminar"}
             </button>
           </div>

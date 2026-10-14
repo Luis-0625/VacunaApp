@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { processReminder, tomorrowISO } from "@/lib/reminders";
 import { REMINDER_SELECT } from "@/lib/reminder-select";
+import { getEstablecimiento } from "@/lib/establecimiento";
 import type { RecordatorioDetalle } from "@/types/db";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +28,8 @@ export async function GET(request: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const results = [];
-  for (const r of data ?? []) results.push(await processReminder(db, r));
+  const establecimiento = await getEstablecimiento(db);
+  for (const r of data ?? []) results.push(await processReminder(db, r, establecimiento));
 
   return NextResponse.json({
     fecha_objetivo: manana,

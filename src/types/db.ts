@@ -1,6 +1,8 @@
 export type EstadoCita = "PENDIENTE" | "COMPLETADA" | "CANCELADA";
 export type EstadoEnvio = "PENDIENTE" | "ENVIADO" | "FALLIDO";
 export type CanalEnvio = "EMAIL" | "WHATSAPP" | "AMBOS";
+/** Respuesta del paciente al recordatorio por WhatsApp (null = sin respuesta). */
+export type Confirmacion = "CONFIRMADA" | "REPROGRAMANDO" | "REPROGRAMADA";
 
 export interface Paciente {
   id: string;
@@ -38,6 +40,11 @@ export interface Recordatorio {
   fecha_programada: string;
   intentos: number;
   ultimo_error: string | null;
+  confirmacion: Confirmacion | null;
+  opciones_fecha: string[] | null;
+  reprogramaciones: number;
+  enviado_at: string | null;
+  respondido_at: string | null;
 }
 
 /** Recordatorio con la cita, paciente y vacuna relacionados. */

@@ -10,7 +10,7 @@ interface Props {
 }
 
 const inputCls =
-  "w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-500/15";
+  "input";
 
 export default function PacienteForm({ paciente, onSaved, onCancel }: Props) {
   const [form, setForm] = useState({
@@ -73,7 +73,7 @@ export default function PacienteForm({ paciente, onSaved, onCancel }: Props) {
       {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-red-200">{error}</p>}
       <div className="flex justify-end gap-2 pt-2">
         <button type="button" onClick={onCancel}
-          className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm hover:bg-slate-50">Cancelar</button>
+          className="btn-secondary">Cancelar</button>
         <button disabled={saving} className="btn-primary">
           {saving ? "Guardando…" : paciente ? "Guardar cambios" : "Crear paciente"}
         </button>

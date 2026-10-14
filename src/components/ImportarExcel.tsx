@@ -69,11 +69,11 @@ export default function ImportarExcel({ onDone }: { onDone?: () => void }) {
           const f = e.dataTransfer.files?.[0];
           if (f) handleFile(f);
         }}
-        className={`cursor-pointer border-2 border-dashed rounded-xl p-8 text-center transition ${
-          dragging ? "border-teal-600 bg-teal-50" : "border-slate-300 hover:border-teal-500"
+        className={`cursor-pointer border-2 border-dashed rounded-lg p-8 text-center transition ${
+          dragging ? "border-brand-600 bg-brand-50" : "border-slate-300 hover:border-brand-500"
         }`}
       >
-        <FileSpreadsheet className="mx-auto mb-2 text-teal-600" size={36} />
+        <FileSpreadsheet className="mx-auto mb-2 text-brand-600" size={36} />
         <p className="font-medium">Arrastra tu archivo aquí o haz clic para seleccionarlo</p>
         <p className="text-xs text-slate-500 mt-1">
           .xlsx, .xls o .csv · Columnas: nombre_completo, documento_identidad, telefono, email, fecha_nacimiento

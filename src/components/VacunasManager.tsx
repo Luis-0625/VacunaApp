@@ -8,7 +8,7 @@ import Modal from "@/components/Modal";
 import { PageHeader } from "@/components/ui";
 
 const inputCls =
-  "w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-500/15";
+  "input";
 
 function VacunaForm({ vacuna, onSaved, onCancel }: { vacuna: Vacuna | null; onSaved: () => void; onCancel: () => void }) {
   const [f, setF] = useState({
@@ -64,7 +64,7 @@ function VacunaForm({ vacuna, onSaved, onCancel }: { vacuna: Vacuna | null; onSa
       </label>
       {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-red-200">{error}</p>}
       <div className="flex justify-end gap-2 pt-2">
-        <button type="button" onClick={onCancel} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm hover:bg-slate-50">Cancelar</button>
+        <button type="button" onClick={onCancel} className="btn-secondary">Cancelar</button>
         <button disabled={saving} className="btn-primary">{saving ? "Guardando…" : "Guardar"}</button>
       </div>
     </form>
@@ -103,10 +103,10 @@ export default function VacunasManager({ vacunas }: { vacunas: Vacuna[] }) {
           </thead>
           <tbody className="divide-y divide-slate-100">
             {vacunas.map((v) => (
-              <tr key={v.id} className="hover:bg-teal-50/40">
+              <tr key={v.id} className="hover:bg-brand-50/40">
                 <td className="td font-medium">{v.nombre}</td>
                 <td className="td">
-                  <span className="rounded-full bg-teal-50 px-2.5 py-1 text-xs font-medium text-teal-700 ring-1 ring-inset ring-teal-600/20">
+                  <span className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700 ring-1 ring-inset ring-brand-600/20">
                     {v.dosis_totales} {v.dosis_totales === 1 ? "dosis" : "dosis"}
                   </span>
                 </td>
@@ -114,7 +114,7 @@ export default function VacunasManager({ vacunas }: { vacunas: Vacuna[] }) {
                 <td className="td max-w-xs truncate text-slate-500">{v.descripcion ?? "—"}</td>
                 <td className="td">
                   <div className="flex justify-end gap-1">
-                    <button onClick={() => setEditing(v)} aria-label="Editar" className="rounded-lg p-2 text-slate-500 hover:bg-teal-50 hover:text-teal-700"><Pencil size={16} /></button>
+                    <button onClick={() => setEditing(v)} aria-label="Editar" className="rounded-lg p-2 text-slate-500 hover:bg-brand-50 hover:text-brand-700"><Pencil size={16} /></button>
                     <button onClick={() => { setError(null); setDeleting(v); }} aria-label="Eliminar" className="rounded-lg p-2 text-slate-500 hover:bg-red-50 hover:text-red-600"><Trash2 size={16} /></button>
                   </div>
                 </td>
@@ -136,8 +136,8 @@ export default function VacunasManager({ vacunas }: { vacunas: Vacuna[] }) {
           <p className="text-sm text-slate-600">¿Eliminar <strong>{deleting.nombre}</strong> del catálogo?</p>
           {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
           <div className="mt-5 flex justify-end gap-2">
-            <button onClick={() => setDeleting(null)} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm hover:bg-slate-50">Cancelar</button>
-            <button onClick={confirmDelete} disabled={busy} className="rounded-xl bg-red-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50">
+            <button onClick={() => setDeleting(null)} className="btn-secondary">Cancelar</button>
+            <button onClick={confirmDelete} disabled={busy} className="rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50">
               {busy ? "Eliminando…" : "Eliminar"}
             </button>
           </div>
