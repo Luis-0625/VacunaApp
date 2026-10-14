@@ -59,7 +59,7 @@ export interface Recordatorio {
 export interface RecordatorioDetalle extends Recordatorio {
   cita: (CitaVacunacion & {
     paciente: Paciente;
-    vacuna: Pick<Vacuna, "nombre">;
+    vacuna: Pick<Vacuna, "nombre" | "intervalo_dias_recom_dosis">;
   }) | null;
 }
 

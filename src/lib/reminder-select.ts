@@ -5,5 +5,5 @@ export const REMINDER_SELECT = `
   cita:citas_vacunacion!inner (
     id, paciente_id, vacuna_id, numero_dosis, fecha_aplicacion, fecha_proxima_dosis, estado,
     paciente:pacientes!inner (id, nombre_completo, documento_identidad, email, telefono, fecha_nacimiento, created_at, autoriza_mensajes, autorizacion_fecha, autorizacion_medio),
-    vacuna:vacunas!inner (nombre)
+    vacuna:vacunas!inner (nombre, intervalo_dias_recom_dosis)
   )`;

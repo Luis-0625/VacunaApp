@@ -52,17 +52,22 @@ async function responder(db: SupabaseClient, est: Establecimiento, from: string,
   const { data, error } = await db
     .from("recordatorios")
     .select(REMINDER_SELECT)
-    .eq("estado_envio", "ENVIADO")
-    .not("enviado_at", "is", null)
-    .or("confirmacion.is.null,confirmacion.eq.REPROGRAMANDO")
+    .in("estado_envio", ["PENDIENTE", "ENVIADO"])
     .eq("cita.paciente.telefono", telefono)
     .gte("cita.fecha_proxima_dosis", hoy)
     .neq("cita.estado", "CANCELADA")
-    .order("enviado_at", { ascending: false })
     .returns<RecordatorioDetalle[]>();
   if (error) throw new Error(error.message);
 
-  const activos = (data ?? []).filter((r): r is Detalle => !!r.cita);
+  // Primero quien está eligiendo fecha, luego el recordatorio enviado más reciente y después la cita más próxima.
+  // Así el paciente puede escribir en cualquier momento (aunque ya haya confirmado) para confirmar, adelantar
+  // o aplazar su próxima cita.
+  const activos = (data ?? [])
+    .filter((r): r is Detalle => !!r.cita)
+    .sort((a, b) =>
+      (b.confirmacion === "REPROGRAMANDO" ? 1 : 0) - (a.confirmacion === "REPROGRAMANDO" ? 1 : 0) ||
+      Date.parse(b.enviado_at ?? "1970-01-01") - Date.parse(a.enviado_at ?? "1970-01-01") ||
+      a.cita.fecha_proxima_dosis!.localeCompare(b.cita.fecha_proxima_dosis!));
 
   // Campaña de pacientes atrasados: se atiende si es el mensaje más reciente que recibió este número
   const campana = await enviosCampanaActivos(db, telefono);
@@ -72,7 +77,7 @@ async function responder(db: SupabaseClient, est: Establecimiento, from: string,
   }
 
   if (activos.length === 0) {
-    return "Hola 👋 No tienes citas pendientes por confirmar con este número. Si necesitas ayuda, comunícate con nosotros.";
+    return "Hola 👋 No encontramos citas programadas con este número. Si necesitas ayuda, comunícate con nosotros.";
   }
 
   // 1. El paciente está eligiendo una nueva fecha
@@ -87,7 +92,7 @@ async function responder(db: SupabaseClient, est: Establecimiento, from: string,
       await actualizar(db, eligiendo, { confirmacion: null, opciones_fecha: null });
       return `Listo, conservamos tu cita del ${formatFechaLarga(eligiendo[0].cita.fecha_proxima_dosis!)}. ${INSTRUCCIONES}`;
     }
-    return menuFechas(opciones, "No entendimos tu respuesta. ");
+    return menuFechas(opciones, "No entendimos tu respuesta. ", eligiendo[0].cita.fecha_proxima_dosis!);
   }
 
   // 2. Primera respuesta al recordatorio: agrupa las citas del mismo día
@@ -101,12 +106,12 @@ async function responder(db: SupabaseClient, est: Establecimiento, from: string,
   }
 
   if (texto === "2" || /^(no|reprogram|cambiar|mover|otra)/.test(texto)) {
-    const opciones = await fechasDisponibles(db, fecha > hoy ? fecha : hoy, est);
+    const opciones = await opcionesReprogramacion(db, est, grupo, fecha, hoy);
     if (opciones.length === 0) {
       return "En este momento no tenemos fechas disponibles en línea. Comunícate con nosotros para reprogramar tu cita." + pie;
     }
     await actualizar(db, grupo, { confirmacion: "REPROGRAMANDO", opciones_fecha: opciones });
-    return menuFechas(opciones);
+    return menuFechas(opciones, "", fecha);
   }
 
   return `Hola ${nombres(grupo)}, tienes cita el ${formatFechaLarga(fecha)} para: ${listaVacunas(grupo)}.\n\n${INSTRUCCIONES}`;
@@ -127,9 +132,41 @@ async function cambiarAutorizacion(db: SupabaseClient, telefono: string, estado:
     : "¡Listo! Volverás a recibir los recordatorios de tus vacunas. Puedes responder *SALIR* en cualquier momento para dejar de recibirlos.";
 }
 
-function menuFechas(opciones: string[], prefijo = ""): string {
-  const lista = opciones.map((f, i) => `*${i + 1}.* ${formatFechaLarga(f)}`).join("\n");
-  return `${prefijo}Elige la nueva fecha respondiendo con su número:\n\n${lista}\n\nResponde *0* para conservar tu cita actual.`;
+/** Fechas por número de opción, separadas en "Adelantar" y "Aplazar" respecto a la cita actual. */
+function menuFechas(opciones: string[], prefijo: string, actual: string): string {
+  const linea = (f: string) => `*${opciones.indexOf(f) + 1}.* ${formatFechaLarga(f)}`;
+  const antes = opciones.filter((f) => f < actual);
+  const despues = opciones.filter((f) => f > actual);
+  const bloques = [
+    antes.length && `⬅️ *Adelantar:*\n${antes.map(linea).join("\n")}`,
+    despues.length && `➡️ *Aplazar:*\n${despues.map(linea).join("\n")}`,
+  ].filter(Boolean).join("\n\n");
+  return `${prefijo}Tu cita actual es el ${formatFechaLarga(actual)}. Elige la nueva fecha respondiendo con su número:\n\n` +
+    `${bloques}\n\nResponde *0* para conservar tu cita actual.`;
+}
+
+/** Cuántas fechas se ofrecen para adelantar y cuántas para aplazar. */
+const OPCIONES_POR_LADO = 3;
+
+/**
+ * Fechas para reprogramar: hasta 3 antes de la cita (desde que se cumple el intervalo recomendado
+ * desde la dosis anterior, y nunca antes de mañana) y hasta 3 después.
+ */
+async function opcionesReprogramacion(
+  db: SupabaseClient, est: Establecimiento, grupo: Detalle[], actual: string, hoy: string
+): Promise<string[]> {
+  // Fecha mínima: la más tardía entre los pacientes del grupo (todos deben cumplir su intervalo)
+  const minima = grupo.reduce((m, r) => {
+    const intervalo = r.cita.vacuna.intervalo_dias_recom_dosis;
+    const f = intervalo ? addDaysISO(r.cita.fecha_aplicacion, intervalo) : hoy;
+    return f > m ? f : m;
+  }, addDaysISO(hoy, 1));
+
+  const antes = minima < actual
+    ? (await fechasDisponibles(db, addDaysISO(minima, -1), est, OPCIONES_POR_LADO)).filter((f) => f < actual)
+    : [];
+  const despues = await fechasDisponibles(db, actual > hoy ? actual : hoy, est, OPCIONES_POR_LADO);
+  return [...antes, ...despues];
 }
 
 async function actualizar(db: SupabaseClient, rs: Detalle[], cambios: Record<string, unknown>) {
