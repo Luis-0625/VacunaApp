@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Building2, CircleCheck, CirclePause, MessageCircle, Plus, Syringe, Users } from "lucide-react";
+import { ArrowLeft, Building2, CircleCheck, CirclePause, LogOut, MessageCircle, Plus, Syringe, Users } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 import Modal from "@/components/Modal";
 import SelectorTema from "@/components/SelectorTema";
 import { LogoEstablecimiento } from "@/components/ui";
@@ -29,6 +30,12 @@ export default function PlataformaManager({ centros, tieneCentro }: { centros: C
   const [suspender, setSuspender] = useState<CentroResumen | null>(null);
   const [whatsapp, setWhatsapp] = useState<CentroResumen | null>(null);
 
+  async function cerrarSesion() {
+    await createClient().auth.signOut();
+    router.replace("/login");
+    router.refresh();
+  }
+
   const activos = centros.filter((c) => c.activo);
   const kpis = [
     { label: "Centros activos", value: `${activos.length} / ${centros.length}`, icon: Building2 },
@@ -52,6 +59,9 @@ export default function PlataformaManager({ centros, tieneCentro }: { centros: C
               <Link href="/dashboard" className="btn-secondary py-2"><ArrowLeft size={16} /> Mi centro</Link>
             )}
             <SelectorTema compacto />
+            <button onClick={cerrarSesion} className="btn-secondary py-2">
+              <LogOut size={16} /> <span className="hidden sm:inline">Cerrar sesión</span>
+            </button>
           </div>
         </div>
       </header>
