@@ -20,7 +20,7 @@ export function enmascararDocumento(doc: string): string {
 
 /**
  * Envía el enlace del carné por WhatsApp. Respeta la autorización de mensajes (Ley 1581).
- * Plantilla de producción: TWILIO_CARNE_CONTENT_SID con {{1}} nombre, {{2}} centro, {{3}} enlace.
+ * Plantilla CARNE: {{1}} nombre, {{2}} centro, {{3}} enlace.
  */
 export async function enviarCarne(db: SupabaseClient, pacienteId: string): Promise<void> {
   const { data: p, error } = await db.from("pacientes")
@@ -38,8 +38,7 @@ export async function enviarCarne(db: SupabaseClient, pacienteId: string): Promi
   await enviarWhatsApp({
     to,
     from: est.whatsapp_from,
-    contentSid: process.env.TWILIO_CARNE_CONTENT_SID,
-    variables: { 1: nombre, 2: est.nombre, 3: url },
+    plantilla: { clave: "CARNE", variables: [nombre, est.nombre, url] },
     body:
       `Hola ${nombre} 👋 Tu carné de vacunación de *${est.nombre}* está actualizado ✅\n\n${url}\n\n` +
       "Guarda este enlace: puedes mostrarlo o dejar que escaneen su código QR para verificarlo.\n\n" +

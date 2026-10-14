@@ -9,10 +9,17 @@ export const maxDuration = 60;
 
 const LOTE = 20;
 
+/** Variables de la plantilla en orden. Las campañas antiguas las guardaban como objeto {1: …, 2: …}. */
+function variablesEnOrden(v: unknown): string[] {
+  if (Array.isArray(v)) return v.map(String);
+  const o = (v ?? {}) as Record<string, unknown>;
+  return Object.keys(o).sort((a, b) => Number(a) - Number(b)).map((k) => String(o[k]));
+}
+
 /**
  * Envía el siguiente lote de mensajes pendientes de la campaña. La pantalla lo llama en bucle
  * hasta que no queden pendientes, así ninguna petición supera el tiempo máximo de la función.
- * Plantilla de producción: TWILIO_CAMPANA_CONTENT_SID con {{1}} nombre, {{2}} vacuna, {{3}} dosis, {{4}} fecha.
+ * Plantilla CAMPANA: {{1}} nombre, {{2}} centro, {{3}} dosis, {{4}} vacuna, {{5}} fecha en que correspondía.
  */
 export async function POST(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const params = await ctx.params;
@@ -36,8 +43,7 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
         to: e.telefono,
         from: est.whatsapp_from,
         body: e.mensaje,
-        contentSid: process.env.TWILIO_CAMPANA_CONTENT_SID,
-        variables: e.variables as Record<string, string>,
+        plantilla: { clave: "CAMPANA", variables: variablesEnOrden(e.variables) },
       });
       await db.from("campana_envios").update({ estado: "ENVIADO", enviado_at: new Date().toISOString(), error: null }).eq("id", e.id);
     } catch (err) {

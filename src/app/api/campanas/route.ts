@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
       cita_id: d.cita_id,
       telefono: d.telefono,
       mensaje: renderMensaje(mensaje, v),
-      variables: { 1: v.nombre, 2: v.vacuna, 3: v.dosis, 4: v.fecha },
+      variables: [v.nombre, v.centro, v.dosis, v.vacuna, v.fecha],
     };
   });
   for (let i = 0; i < envios.length; i += 500) {
