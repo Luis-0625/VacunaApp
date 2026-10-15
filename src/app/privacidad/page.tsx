@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { EMPRESA } from "@/lib/empresa";
 
 export const metadata: Metadata = { title: "Política de privacidad" };
 
@@ -6,7 +7,7 @@ const ACTUALIZADA = "14 de octubre de 2026";
 
 /** Política de tratamiento de datos de la plataforma (Ley 1581 de 2012). */
 export default function PrivacidadPage() {
-  const contacto = process.env.NEXT_PUBLIC_CONTACTO_PRIVACIDAD;
+  const contacto = process.env.NEXT_PUBLIC_CONTACTO_PRIVACIDAD || EMPRESA.email;
   return (
     <main className="min-h-screen px-4 py-10">
       <article className="card mx-auto max-w-3xl space-y-5 p-8 text-sm leading-relaxed text-slate-700 [&_h2]:pt-2 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-slate-900">

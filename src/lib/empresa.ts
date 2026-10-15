@@ -9,7 +9,7 @@ export const EMPRESA = {
   nit: "", // ej. "1.102.345.678-9"
   direccion: "", // ej. "Calle 25 # 20-30, Sincelejo, Sucre"
   ciudad: "Sincelejo, Sucre, Colombia",
-  email: process.env.NEXT_PUBLIC_CONTACTO_PRIVACIDAD ?? "",
+  email: "jltechimport1@gmail.com",
   /** WhatsApp de ventas y soporte, solo dígitos con indicativo (ej. "573001234567"). */
   whatsapp: "573206300392",
 };
