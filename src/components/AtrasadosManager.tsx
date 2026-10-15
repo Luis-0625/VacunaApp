@@ -403,7 +403,7 @@ function CampanaModal({ seleccion, centro, onClose }: {
         )}
 
         <p className="text-xs text-slate-500">
-          En producción, WhatsApp exige una plantilla aprobada por Meta (TWILIO_CAMPANA_CONTENT_SID); en ese caso se envía la
+          En producción, WhatsApp exige una plantilla aprobada (TWILIO_CAMPANA_CONTENT_SID); en ese caso se envía la
           plantilla en lugar de este texto.
         </p>
 

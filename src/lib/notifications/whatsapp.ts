@@ -3,21 +3,14 @@ import { formatFechaLarga } from "@/lib/agenda";
 import { datosContacto, type Establecimiento } from "@/lib/establecimiento";
 
 /**
- * Proveedor de WhatsApp: WHATSAPP_PROVIDER=meta usa la API de Meta (Cloud API) directamente;
- * cualquier otro valor usa Twilio. Los mensajes que inicia el centro (recordatorio, campaña, carné)
- * requieren una plantilla aprobada por Meta; las respuestas dentro de las 24 h del último mensaje
+ * WhatsApp se envía con Twilio. Los mensajes que inicia el centro (recordatorio, campaña, carné)
+ * requieren una plantilla aprobada; las respuestas dentro de las 24 h del último mensaje
  * del paciente pueden ser texto libre.
  */
-export const proveedorWhatsApp = () => (process.env.WHATSAPP_PROVIDER === "meta" ? "meta" : "twilio");
 
 /** Plantillas aprobadas. Las variables se envían en este orden ({{1}}, {{2}}, …). */
 export type ClavePlantilla = "RECORDATORIO" | "CAMPANA" | "CARNE";
 
-const PLANTILLA_META: Record<ClavePlantilla, string | undefined> = {
-  RECORDATORIO: process.env.META_PLANTILLA_RECORDATORIO,
-  CAMPANA: process.env.META_PLANTILLA_CAMPANA,
-  CARNE: process.env.META_PLANTILLA_CARNE,
-};
 const PLANTILLA_TWILIO: Record<ClavePlantilla, string | undefined> = {
   RECORDATORIO: process.env.TWILIO_WHATSAPP_CONTENT_SID,
   CAMPANA: process.env.TWILIO_CAMPANA_CONTENT_SID,
@@ -41,30 +34,10 @@ export interface ReminderMessageInput {
 export async function enviarWhatsApp(input: {
   to: string;
   body: string;
-  /** Número propio del centro en Twilio (whatsapp:+57...). Con Meta se usa el número de la plataforma. */
+  /** Número propio del centro en Twilio (whatsapp:+57...). */
   from?: string | null;
   plantilla?: { clave: ClavePlantilla; variables: string[] };
 }): Promise<void> {
-  if (proveedorWhatsApp() === "meta") {
-    const nombre = input.plantilla && PLANTILLA_META[input.plantilla.clave];
-    if (nombre) {
-      await enviarMeta(input.to, {
-        type: "template",
-        template: {
-          name: nombre,
-          language: { code: process.env.META_PLANTILLAS_IDIOMA ?? "es" },
-          components: [{
-            type: "body",
-            parameters: input.plantilla!.variables.map((text) => ({ type: "text", text: text || "-" })),
-          }],
-        },
-      });
-    } else {
-      await enviarTextoWhatsApp(input.to, input.body);
-    }
-    return;
-  }
-
   const sid = process.env.TWILIO_ACCOUNT_SID;
   const token = process.env.TWILIO_AUTH_TOKEN;
   if (!sid || !token) throw new Error("Credenciales de Twilio no configuradas");
@@ -90,29 +63,6 @@ export async function enviarWhatsApp(input: {
     to: useSms ? input.to : `whatsapp:${input.to}`,
     body: input.body,
   });
-}
-
-/** Texto libre por la API de Meta (respuestas del bot dentro de la ventana de 24 h). */
-export async function enviarTextoWhatsApp(to: string, body: string): Promise<void> {
-  await enviarMeta(to, { type: "text", text: { body: body.slice(0, 4096), preview_url: true } });
-}
-
-async function enviarMeta(to: string, mensaje: Record<string, unknown>): Promise<void> {
-  const token = process.env.META_WA_TOKEN;
-  const phoneId = process.env.META_WA_PHONE_NUMBER_ID;
-  if (!token || !phoneId) throw new Error("META_WA_TOKEN o META_WA_PHONE_NUMBER_ID no configurados");
-
-  const version = process.env.META_GRAPH_VERSION ?? "v23.0";
-  const res = await fetch(`https://graph.facebook.com/${version}/${phoneId}/messages`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ messaging_product: "whatsapp", to: to.replace(/^\+/, ""), ...mensaje }),
-  });
-  if (!res.ok) {
-    const json = await res.json().catch(() => null);
-    const err = json?.error;
-    throw new Error(`Meta: ${err?.error_user_msg ?? err?.message ?? `HTTP ${res.status}`}${err?.code ? ` (código ${err.code})` : ""}`);
-  }
 }
 
 /**

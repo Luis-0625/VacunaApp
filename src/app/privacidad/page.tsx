@@ -4,7 +4,7 @@ export const metadata: Metadata = { title: "Política de privacidad" };
 
 const ACTUALIZADA = "14 de octubre de 2026";
 
-/** Política de tratamiento de datos de la plataforma (Ley 1581 de 2012). Requerida por Meta para WhatsApp. */
+/** Política de tratamiento de datos de la plataforma (Ley 1581 de 2012). */
 export default function PrivacidadPage() {
   const contacto = process.env.NEXT_PUBLIC_CONTACTO_PRIVACIDAD;
   return (
@@ -48,7 +48,7 @@ export default function PrivacidadPage() {
         <p>
           El centro de vacunación solicita la autorización del paciente para el tratamiento de sus datos y para recibir
           mensajes, y registra la fecha y el medio. Suministrar datos sensibles es facultativo. Los mensajes por WhatsApp
-          se envían a través de la plataforma de WhatsApp Business de Meta.
+          se envían a través de un proveedor de mensajería (Twilio).
         </p>
 
         <h2>Derechos del titular</h2>
