@@ -2,6 +2,7 @@ import twilio from "twilio";
 import { formatFechaLarga } from "@/lib/agenda";
 import { datosContacto, type Establecimiento } from "@/lib/establecimiento";
 import { enumerar, nombresPacientes, porPaciente, type DosisMensaje } from "@/lib/mensaje-citas";
+import { urlApp } from "@/lib/url";
 
 /**
  * WhatsApp se envía con Twilio. Los mensajes que inicia el centro (recordatorio, campaña, carné)
@@ -37,7 +38,7 @@ export async function enviarWhatsApp(input: {
   /** Número propio del centro en Twilio (whatsapp:+57...). */
   from?: string | null;
   plantilla?: { clave: ClavePlantilla; variables: string[] };
-}): Promise<void> {
+}): Promise<string> {
   const sid = process.env.TWILIO_ACCOUNT_SID;
   const token = process.env.TWILIO_AUTH_TOKEN;
   if (!sid || !token) throw new Error("Credenciales de Twilio no configuradas");
@@ -47,30 +48,38 @@ export async function enviarWhatsApp(input: {
   if (!fromRaw) throw new Error(useSms ? "TWILIO_SMS_FROM no configurada" : "TWILIO_WHATSAPP_FROM no configurada");
 
   const client = twilio(sid, token);
-  const contentSid = input.plantilla && PLANTILLA_TWILIO[input.plantilla.clave];
-  if (!useSms && contentSid) {
-    await client.messages.create({
-      from: fromRaw,
-      to: `whatsapp:${input.to}`,
-      contentSid,
-      contentVariables: JSON.stringify(Object.fromEntries(input.plantilla!.variables.map((v, i) => [i + 1, v]))),
-    });
-    return;
-  }
+  // Twilio avisa a /api/whatsapp/estado si el mensaje se entrega o falla (aceptarlo no es entregarlo).
+  // Solo con una URL pública https: en local no la puede alcanzar.
+  const base = urlApp();
+  const statusCallback = base.startsWith("https://") ? `${base}${RUTA_ESTADO}` : undefined;
 
-  await client.messages.create({
-    from: fromRaw,
-    to: useSms ? input.to : `whatsapp:${input.to}`,
-    body: input.body,
-  });
+  const contentSid = input.plantilla && PLANTILLA_TWILIO[input.plantilla.clave];
+  const mensaje = !useSms && contentSid
+    ? await client.messages.create({
+        from: fromRaw,
+        to: `whatsapp:${input.to}`,
+        contentSid,
+        contentVariables: JSON.stringify(Object.fromEntries(input.plantilla!.variables.map((v, i) => [i + 1, v]))),
+        statusCallback,
+      })
+    : await client.messages.create({
+        from: fromRaw,
+        to: useSms ? input.to : `whatsapp:${input.to}`,
+        body: input.body,
+        statusCallback,
+      });
+  return mensaje.sid;
 }
+
+/** Ruta que recibe de Twilio el estado de entrega de cada mensaje. */
+export const RUTA_ESTADO = "/api/whatsapp/estado";
 
 /**
  * Recordatorio del día anterior: un solo mensaje con todas las dosis de mañana para ese teléfono.
  * Plantilla RECORDATORIO: {{1}} nombre, {{2}} fecha, {{3}} dosis, {{4}} vacuna, {{5}} centro. Con varias
  * dosis, {{3}} es la primera y {{4}} sigue la frase: "la dosis {{3}} de Hepatitis B y la dosis 1 de Polio".
  */
-export async function sendReminderWhatsApp(input: ReminderMessageInput): Promise<void> {
+export async function sendReminderWhatsApp(input: ReminderMessageInput): Promise<string> {
   const fecha = formatFechaLarga(input.fechaProximaDosis);
   const est = input.establecimiento;
   const contacto = datosContacto(est);
@@ -86,7 +95,7 @@ export async function sendReminderWhatsApp(input: ReminderMessageInput): Promise
     : `te recordamos que mañana ${fecha} te corresponde ` +
       `${enumerar(input.dosis.map((d) => `la dosis ${d.dosis} de ${d.vacuna}`))} en *${est.nombre}*.`;
 
-  await enviarWhatsApp({
+  return enviarWhatsApp({
     to: input.to,
     from: est.whatsapp_from,
     plantilla: {

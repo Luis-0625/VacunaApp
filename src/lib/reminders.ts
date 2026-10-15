@@ -70,9 +70,41 @@ export async function processReminders(
       anotar(grupo, `Email: ${(e as Error).message}`);
     }
   }
+
+  const salida = new Map<string, { id: string; ok: boolean; error?: string }>();
+  /** Guarda el estado final de cada recordatorio (los dos canales ya se intentaron). */
+  const guardar = async (grupo: RecordatorioDetalle[], whatsappSid?: string) => {
+    for (const r of grupo) {
+      const { entregados, errors } = resultado.get(r.id)!;
+      const ok = entregados > 0;
+      const { error } = await db
+        .from("recordatorios")
+        .update({
+          estado_envio: ok ? "ENVIADO" : "FALLIDO",
+          intentos: r.intentos + 1,
+          ultimo_error: errors.length ? errors.join(" | ").slice(0, 500) : null,
+          // Abre una nueva conversación de confirmación con el paciente
+          ...(ok && { enviado_at: new Date().toISOString(), confirmacion: null, opciones_fecha: null }),
+        })
+        .eq("id", r.id);
+      // Aparte y sin bloquear: si aún no existe la columna (estado_whatsapp.sql), el envío no se ve afectado
+      if (whatsappSid && !error) await db.from("recordatorios").update({ whatsapp_sid: whatsappSid }).eq("id", r.id);
+      salida.set(r.id, error
+        ? { id: r.id, ok: false, error: `No se pudo actualizar: ${error.message}` }
+        : { id: r.id, ok, error: errors.length ? errors.join(" | ") : undefined });
+    }
+  };
+
+  // Los que no van por WhatsApp ya terminaron
+  const porWhatsApp = new Set([...porTelefono.values()].flat().map((r) => r.id));
+  await guardar(rs.filter((r) => !porWhatsApp.has(r.id)));
+
+  // Cada grupo de WhatsApp se guarda apenas se envía, con el id del mensaje: así, si Twilio avisa en seguida
+  // que no lo entregó (/api/whatsapp/estado), ya encuentra el recordatorio y su estado no se sobrescribe.
   for (const [clave, grupo] of porTelefono) {
+    let sid: string | undefined;
     try {
-      await sendReminderWhatsApp({
+      sid = await sendReminderWhatsApp({
         to: clave.split("|")[2], establecimiento: await estDe(grupo[0].centro_id),
         fechaProximaDosis: fechaDe(grupo[0]), dosis: dosisDe(grupo),
       });
@@ -80,27 +112,10 @@ export async function processReminders(
     } catch (e) {
       anotar(grupo, `WhatsApp: ${(e as Error).message}`);
     }
+    await guardar(grupo, sid);
   }
 
-  const salida = [];
-  for (const r of rs) {
-    const { entregados, errors } = resultado.get(r.id)!;
-    const ok = entregados > 0;
-    const { error } = await db
-      .from("recordatorios")
-      .update({
-        estado_envio: ok ? "ENVIADO" : "FALLIDO",
-        intentos: r.intentos + 1,
-        ultimo_error: errors.length ? errors.join(" | ").slice(0, 500) : null,
-        // Abre una nueva conversación de confirmación con el paciente
-        ...(ok && { enviado_at: new Date().toISOString(), confirmacion: null, opciones_fecha: null }),
-      })
-      .eq("id", r.id);
-    salida.push(error
-      ? { id: r.id, ok: false, error: `No se pudo actualizar: ${error.message}` }
-      : { id: r.id, ok, error: errors.length ? errors.join(" | ") : undefined });
-  }
-  return salida;
+  return rs.map((r) => salida.get(r.id)!);
 }
 
 /** Reenvía un solo recordatorio (botón "Reintentar" del monitor). */

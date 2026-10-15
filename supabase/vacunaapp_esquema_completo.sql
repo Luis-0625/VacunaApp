@@ -2,7 +2,7 @@
 -- VacunaApp - ESQUEMA COMPLETO DE LA BASE DE DATOS (un solo archivo)
 -- =====================================================================================================
 -- Reemplaza a schema, roles, confirmaciones, establecimiento, autorizacion, campanas, carne,
--- dosis_externas, multicentro, inventario y suscripciones (.sql). Se ejecuta UNA vez y se puede REPETIR sin riesgo.
+-- dosis_externas, multicentro, inventario, suscripciones y estado_whatsapp (.sql). Se ejecuta UNA vez y se puede REPETIR sin riesgo.
 --
 --   * Base nueva ........ crea todo el esquema final.
 --   * Base ya en uso .... la actualiza sin perder datos (agrega lo que falte y vuelve a crear las
@@ -827,6 +827,10 @@ end $$;
 
 revoke execute on function aplicar_pago_suscripcion(uuid, text, date) from public, anon, authenticated;
 grant execute on function aplicar_pago_suscripcion(uuid, text, date) to service_role;
+
+-- 14. Estado real de entrega de los WhatsApp (id del mensaje de Twilio en cada recordatorio) -------------
+alter table recordatorios add column if not exists whatsapp_sid text;
+create index if not exists recordatorios_whatsapp_sid_idx on recordatorios (whatsapp_sid) where whatsapp_sid is not null;
 
 -- Refresca la caché de esquema de la API de Supabase (en PostgreSQL puro no tiene efecto)
 notify pgrst, 'reload schema';
