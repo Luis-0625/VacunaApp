@@ -55,9 +55,9 @@ export default function TerminosPage() {
 
         <h2>5. Mensajes por WhatsApp</h2>
         <p>
-          Los mensajes se envían a través de la plataforma de WhatsApp Business de Meta y están sujetos a sus políticas. El
+          Los mensajes se envían por WhatsApp Business a través de un proveedor de mensajería (Twilio) y están sujetos a las políticas de Meta y de Twilio. El
           Cliente se compromete a enviar mensajes solo a pacientes que lo hayan autorizado y a no usar el servicio para
-          publicidad no solicitada. Los costos de conversación que cobre Meta pueden facturarse aparte según el plan.
+          publicidad no solicitada. Los costos por mensaje que cobren Meta y Twilio pueden facturarse aparte según el plan.
         </p>
 
         <h2>6. Uso aceptable</h2>
@@ -70,7 +70,7 @@ export default function TerminosPage() {
         <h2>7. Disponibilidad y soporte</h2>
         <p>
           Trabajamos para mantener el servicio disponible de forma continua, con respaldos en la nube, salvo mantenimientos
-          programados o fallas de proveedores externos (hosting, Meta, operadores de correo). El soporte se presta por los
+          programados o fallas de proveedores externos (hosting, Twilio, Meta, operadores de correo). El soporte se presta por los
           canales y en los horarios de cada plan.
         </p>
 

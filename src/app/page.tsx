@@ -39,7 +39,7 @@ const MODULOS = [
 const INTEGRACIONES = ["WhatsApp Business API", "Meta", "Twilio", "Resend", "Supabase"];
 
 const FAQ = [
-  { p: "¿Puedo usar mi propio número de WhatsApp?", r: "Sí. Vinculamos tu línea fija o móvil oficial a través de la API en la nube de Meta (WhatsApp Business Platform), y tus pacientes ven el nombre de tu centro." },
+  { p: "¿Puedo usar mi propio número de WhatsApp?", r: "Sí. Vinculamos tu línea fija o móvil oficial a WhatsApp Business a través de Twilio, proveedor oficial de Meta, y tus pacientes ven el nombre de tu centro." },
   { p: "¿Cumple con la normatividad de datos de salud en Colombia?", r: "Sí. Tratamos los datos conforme a la Ley 1581 de 2012: autorización registrada de cada paciente, opción de retirarla respondiendo SALIR, bases de datos cifradas y acceso restringido por centro y por rol." },
   { p: "¿Cuánto tarda la implementación?", r: "Dejamos la plataforma parametrizada, cargamos tus pacientes desde Excel y capacitamos a tu personal en 3 días hábiles." },
   { p: "¿Tengo contrato de permanencia?", r: "No. En el plan mensual puedes cancelar o cambiar de plan cuando quieras." },
