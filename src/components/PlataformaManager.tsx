@@ -8,6 +8,19 @@ import { createClient } from "@/lib/supabase/client";
 import Modal from "@/components/Modal";
 import SelectorTema from "@/components/SelectorTema";
 import { LogoEstablecimiento } from "@/components/ui";
+import { addDaysISO, formatFechaLarga } from "@/lib/agenda";
+import { NOMBRE_PLAN, estadoSuscripcion, type Plan } from "@/lib/suscripcion";
+
+/** Pago hecho con el link fijo de Mercado Pago, esperando que el superadmin lo confirme. */
+export interface PagoPorConfirmar {
+  id: string;
+  centro_id: string;
+  centro: string;
+  plan: Exclude<Plan, "PRUEBA">;
+  meses: number;
+  monto: number;
+  created_at: string;
+}
 
 export interface CentroResumen {
   id: string;
@@ -15,6 +28,8 @@ export interface CentroResumen {
   ciudad: string | null;
   activo: boolean;
   whatsapp_from: string | null;
+  plan: Plan;
+  suscripcion_vence: string | null;
   created_at: string;
   usuarios: number;
   pacientes: number;
@@ -24,11 +39,14 @@ export interface CentroResumen {
 const fecha = (iso: string) => new Date(iso).toLocaleDateString("es-CO", { dateStyle: "medium" });
 
 /** Panel del superadministrador: centros clientes, alta de centros, suspensión y número de WhatsApp. */
-export default function PlataformaManager({ centros, tieneCentro }: { centros: CentroResumen[]; tieneCentro: boolean }) {
+export default function PlataformaManager({ centros, pagos, tieneCentro, hoy }: {
+  centros: CentroResumen[]; pagos: PagoPorConfirmar[]; tieneCentro: boolean; hoy: string;
+}) {
   const router = useRouter();
   const [nuevo, setNuevo] = useState(false);
   const [suspender, setSuspender] = useState<CentroResumen | null>(null);
   const [whatsapp, setWhatsapp] = useState<CentroResumen | null>(null);
+  const [suscripcion, setSuscripcion] = useState<CentroResumen | null>(null);
 
   async function cerrarSesion() {
     await createClient().auth.signOut();
@@ -87,12 +105,14 @@ export default function PlataformaManager({ centros, tieneCentro }: { centros: C
           ))}
         </div>
 
+        {pagos.length > 0 && <PagosPorConfirmar pagos={pagos} onCambio={() => router.refresh()} />}
+
         <div className="card overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-slate-50/70">
               <tr>
                 <th className="th">Centro</th><th className="th">Usuarios</th><th className="th">Pacientes</th>
-                <th className="th">Dosis 30 días</th><th className="th">WhatsApp</th><th className="th">Estado</th><th className="th" />
+                <th className="th">Dosis 30 días</th><th className="th">Suscripción</th><th className="th">WhatsApp</th><th className="th">Estado</th><th className="th" />
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -105,6 +125,12 @@ export default function PlataformaManager({ centros, tieneCentro }: { centros: C
                   <td className="td tabular-nums">{c.usuarios}</td>
                   <td className="td tabular-nums">{c.pacientes}</td>
                   <td className="td tabular-nums">{c.dosis30}</td>
+                  <td className="td">
+                    <button onClick={() => setSuscripcion(c)} className="text-left hover:underline">
+                      <div className="text-xs font-medium text-slate-700">{NOMBRE_PLAN[c.plan] ?? c.plan}</div>
+                      <EstadoPlan vence={c.suscripcion_vence} hoy={hoy} />
+                    </button>
+                  </td>
                   <td className="td">
                     <button onClick={() => setWhatsapp(c)} className="inline-flex items-center gap-1.5 text-xs text-brand-700 hover:underline">
                       <MessageCircle size={13} /> {c.whatsapp_from?.replace("whatsapp:", "") ?? "Número de la plataforma"}
@@ -130,7 +156,7 @@ export default function PlataformaManager({ centros, tieneCentro }: { centros: C
                 </tr>
               ))}
               {centros.length === 0 && (
-                <tr><td colSpan={7} className="py-14 text-center text-slate-400">Aún no hay centros. Crea el primero.</td></tr>
+                <tr><td colSpan={8} className="py-14 text-center text-slate-400">Aún no hay centros. Crea el primero.</td></tr>
               )}
             </tbody>
           </table>
@@ -140,7 +166,74 @@ export default function PlataformaManager({ centros, tieneCentro }: { centros: C
       {nuevo && <NuevoCentro onClose={(creado) => { setNuevo(false); if (creado) router.refresh(); }} />}
       {suspender && <CambiarEstado centro={suspender} onClose={(ok) => { setSuspender(null); if (ok) router.refresh(); }} />}
       {whatsapp && <NumeroWhatsApp centro={whatsapp} onClose={(ok) => { setWhatsapp(null); if (ok) router.refresh(); }} />}
+      {suscripcion && <EditarSuscripcion centro={suscripcion} hoy={hoy} onClose={(ok) => { setSuscripcion(null); if (ok) router.refresh(); }} />}
     </div>
+  );
+}
+
+function EstadoPlan({ vence, hoy }: { vence: string | null; hoy: string }) {
+  const s = estadoSuscripcion(vence, hoy);
+  const [cls, texto] =
+    s.estado === "VIGENTE" ? ["text-slate-500", vence ? `hasta ${formatFechaLarga(vence)}` : "sin vencimiento"]
+    : s.estado === "POR_VENCER" ? ["text-amber-700", s.dias === 0 ? "vence hoy" : `vence en ${s.dias} d`]
+    : s.estado === "GRACIA" ? ["text-red-600", "vencida · en gracia"]
+    : ["text-red-600 font-medium", "vencida · bloqueada"];
+  return <div className={`text-xs ${cls}`}>{texto}</div>;
+}
+
+/** Ajuste manual: pagos por transferencia, cortesías o correcciones. Los pagos con Mercado Pago son automáticos. */
+function EditarSuscripcion({ centro, hoy, onClose }: { centro: CentroResumen; hoy: string; onClose: (ok: boolean) => void }) {
+  const [plan, setPlan] = useState<Plan>(centro.plan);
+  const [vence, setVence] = useState(centro.suscripcion_vence ?? hoy);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Suma meses desde el vencimiento actual, o desde hoy si ya venció
+  const sumarMeses = (n: number) => {
+    const base = new Date(`${vence > hoy ? vence : hoy}T12:00:00`);
+    base.setMonth(base.getMonth() + n);
+    setVence(base.toISOString().slice(0, 10));
+  };
+
+  async function guardar(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    const err = await patchCentro(centro.id, { plan, suscripcion_vence: vence });
+    setBusy(false);
+    if (err) return setError(err);
+    onClose(true);
+  }
+
+  return (
+    <Modal title={`Suscripción · ${centro.nombre}`} onClose={() => onClose(false)}>
+      <form onSubmit={guardar} className="space-y-4">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="block space-y-1.5">
+            <span className="text-sm font-medium text-slate-700">Plan</span>
+            <select value={plan} onChange={(e) => setPlan(e.target.value as Plan)} className="input">
+              {(Object.keys(NOMBRE_PLAN) as Plan[]).map((p) => <option key={p} value={p}>{NOMBRE_PLAN[p]}</option>)}
+            </select>
+          </label>
+          <label className="block space-y-1.5">
+            <span className="text-sm font-medium text-slate-700">Pagado hasta (inclusive)</span>
+            <input type="date" required value={vence} onChange={(e) => setVence(e.target.value)} className="input" />
+          </label>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => sumarMeses(1)} className="btn-secondary py-1.5 text-xs">+1 mes</button>
+          <button type="button" onClick={() => sumarMeses(12)} className="btn-secondary py-1.5 text-xs">+12 meses</button>
+          <button type="button" onClick={() => setVence(addDaysISO(hoy, 6))} className="btn-secondary py-1.5 text-xs">Prueba de 6 días</button>
+        </div>
+        <p className="text-xs text-slate-500">
+          Úsalo para pagos por transferencia o cortesías. Los pagos con Mercado Pago renuevan la suscripción solos.
+        </p>
+        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-red-200">{error}</p>}
+        <div className="flex justify-end gap-2">
+          <button type="button" onClick={() => onClose(false)} className="btn-secondary">Cancelar</button>
+          <button disabled={busy} className="btn-primary">{busy ? "Guardando…" : "Guardar"}</button>
+        </div>
+      </form>
+    </Modal>
   );
 }
 
@@ -277,5 +370,58 @@ function NumeroWhatsApp({ centro, onClose }: { centro: CentroResumen; onClose: (
         </div>
       </form>
     </Modal>
+  );
+}
+
+/** Pagos con el link fijo de Mercado Pago: se confirman cuando el dinero aparece en la cuenta. */
+function PagosPorConfirmar({ pagos, onCambio }: { pagos: PagoPorConfirmar[]; onCambio: () => void }) {
+  const [ocupado, setOcupado] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function accion(id: string, accion: "confirmar" | "descartar") {
+    if (accion === "descartar" && !confirm("¿Descartar este pago? Úsalo solo si el dinero nunca llegó a Mercado Pago.")) return;
+    setOcupado(id);
+    setError(null);
+    const res = await fetch(`/api/plataforma/pagos/${id}`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ accion }),
+    });
+    setOcupado(null);
+    if (!res.ok) return setError((await res.json().catch(() => ({}))).error ?? "No se pudo actualizar el pago");
+    onCambio();
+  }
+
+  return (
+    <section className="card overflow-x-auto ring-1 ring-amber-300">
+      <div className="border-b border-slate-100 px-5 py-4">
+        <h2 className="font-semibold">Pagos por confirmar ({pagos.length})</h2>
+        <p className="mt-0.5 text-xs text-slate-500">
+          Centros que abrieron el link de pago de Mercado Pago. Confírmalos cuando veas el dinero en tu cuenta: la suscripción se renueva al instante.
+        </p>
+      </div>
+      {error && <p className="mx-5 mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      <table className="w-full text-sm">
+        <thead className="bg-slate-50/70">
+          <tr><th className="th">Centro</th><th className="th">Plan</th><th className="th">Valor</th><th className="th">Iniciado</th><th className="th" /></tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100">
+          {pagos.map((p) => (
+            <tr key={p.id}>
+              <td className="td font-medium">{p.centro}</td>
+              <td className="td">{NOMBRE_PLAN[p.plan]} · {p.meses === 12 ? "12 meses" : "1 mes"}</td>
+              <td className="td tabular-nums">${p.monto.toLocaleString("es-CO")}</td>
+              <td className="td text-slate-500">{new Date(p.created_at).toLocaleString("es-CO", { dateStyle: "medium", timeStyle: "short" })}</td>
+              <td className="td">
+                <div className="flex justify-end gap-2">
+                  <button onClick={() => accion(p.id, "descartar")} disabled={!!ocupado} className="btn-secondary py-1.5 text-xs">Descartar</button>
+                  <button onClick={() => accion(p.id, "confirmar")} disabled={!!ocupado} className="btn-primary py-1.5 text-xs">
+                    {ocupado === p.id ? "Guardando…" : "Confirmar pago"}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
   );
 }

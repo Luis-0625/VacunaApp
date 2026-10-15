@@ -1,12 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireSuperadminApi } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { PLANES } from "@/lib/suscripcion";
 
 export const dynamic = "force-dynamic";
 
 const WHATSAPP = /^whatsapp:\+[1-9]\d{7,14}$/;
 
-/** Suspende/reactiva un centro o cambia su número de WhatsApp. Solo superadministradores. */
+/** Suspende/reactiva un centro, cambia su número de WhatsApp o ajusta su suscripción. Solo superadministradores. */
 export async function PATCH(request: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const params = await ctx.params;
   const denegado = await requireSuperadminApi();
@@ -23,6 +24,18 @@ export async function PATCH(request: NextRequest, ctx: { params: Promise<{ id: s
       if (!WHATSAPP.test(valor)) return NextResponse.json({ error: "Número inválido. Ej: +573001234567" }, { status: 400 });
       update.whatsapp_from = valor;
     }
+  }
+  // Ajuste manual de la suscripción (pagos por transferencia, cortesías)
+  if (b?.plan !== undefined) {
+    if (!["PRUEBA", ...Object.keys(PLANES)].includes(b.plan)) return NextResponse.json({ error: "Plan inválido" }, { status: 400 });
+    update.plan = b.plan;
+  }
+  if (b?.suscripcion_vence !== undefined) {
+    const v = String(b.suscripcion_vence);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(v) || Number.isNaN(Date.parse(v))) {
+      return NextResponse.json({ error: "Fecha de vencimiento inválida" }, { status: 400 });
+    }
+    update.suscripcion_vence = v;
   }
   if (Object.keys(update).length === 1) return NextResponse.json({ error: "Nada que actualizar" }, { status: 400 });
 

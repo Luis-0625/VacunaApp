@@ -3,6 +3,7 @@ import { formatFechaLarga } from "@/lib/agenda";
 import { COLORES_MARCA, type Establecimiento } from "@/lib/establecimiento";
 import type { AlertaLote, AlertasInventario } from "@/lib/inventario-alertas";
 import { enumerar, nombresPacientes, porPaciente, type DosisMensaje } from "@/lib/mensaje-citas";
+import type { EstadoSuscripcion } from "@/lib/suscripcion";
 
 export interface ReminderEmailInput {
   to: string;
@@ -108,6 +109,74 @@ export async function sendAlertasInventarioEmail(input: {
         <p style="max-width:560px;margin:12px auto 0;font-size:12px;color:#94a3b8;text-align:center">
           Recibes este aviso diario porque eres administrador de ${escapeHtml(est.nombre)} en VacunaApp. Solo se envía cuando hay alertas.
         </p>
+      </div>`,
+  });
+  if (error) throw new Error(`Resend: ${error.message}`);
+}
+
+/** Aviso a los administradores de un centro de que su suscripción está por vencer o ya venció. */
+export async function sendAvisoSuscripcionEmail(input: {
+  to: string[];
+  establecimiento: Establecimiento;
+  estado: EstadoSuscripcion;
+  url: string;
+}): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) throw new Error("RESEND_API_KEY no configurada");
+
+  const est = input.establecimiento;
+  const s = input.estado;
+  const asunto =
+    s.estado === "GRACIA" ? "Tu suscripción de VacunaApp venció"
+    : s.estado === "POR_VENCER" && s.dias === 0 ? "Tu suscripción de VacunaApp vence hoy"
+    : "Tu suscripción de VacunaApp está por vencer";
+  const detalle =
+    s.estado === "GRACIA"
+      ? `La suscripción de <strong>${escapeHtml(est.nombre)}</strong> venció. El panel se bloqueará el <strong>${formatFechaLarga(s.bloqueo)}</strong> y no se enviarán recordatorios a tus pacientes hasta que la renueves.`
+      : s.estado === "POR_VENCER" && s.dias === 0
+        ? `La suscripción de <strong>${escapeHtml(est.nombre)}</strong> vence hoy. Renuévala para que tu equipo y los recordatorios a tus pacientes sigan funcionando sin interrupción.`
+        : `La suscripción de <strong>${escapeHtml(est.nombre)}</strong> vence el <strong>${formatFechaLarga(est.suscripcion_vence!)}</strong>. Renuévala a tiempo para no interrumpir el servicio.`;
+
+  const resend = new Resend(apiKey);
+  const { error } = await resend.emails.send({
+    from: process.env.RESEND_FROM ?? "VacunaApp <onboarding@resend.dev>",
+    to: input.to,
+    subject: asunto,
+    html: `
+      <div style="font-family:Arial,Helvetica,sans-serif;color:#0f172a;max-width:520px">
+        <h2 style="margin:0 0 12px;font-size:18px">${asunto}</h2>
+        <p style="margin:0 0 20px;line-height:1.6">${detalle}</p>
+        <a href="${escapeHtml(input.url)}" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:10px 18px;border-radius:8px;font-weight:bold">Renovar con Mercado Pago</a>
+        <p style="margin:20px 0 0;color:#94a3b8;font-size:12px">Recibes este aviso porque eres administrador de ${escapeHtml(est.nombre)} en VacunaApp. Puedes pagar con PSE, tarjeta o Efecty.</p>
+      </div>`,
+  });
+  if (error) throw new Error(`Resend: ${error.message}`);
+}
+
+/** Aviso a los superadmins: un centro va a pagar con el link fijo y hay que confirmar el pago en /plataforma. */
+export async function sendPagoPorConfirmarEmail(to: string[], p: {
+  centro: string; plan: string; meses: number; monto: number; admin: string; url: string;
+}): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) throw new Error("RESEND_API_KEY no configurada");
+
+  const valor = `$${p.monto.toLocaleString("es-CO")} COP`;
+  const resend = new Resend(apiKey);
+  const { error } = await resend.emails.send({
+    from: process.env.RESEND_FROM ?? "VacunaApp <onboarding@resend.dev>",
+    to,
+    subject: `Pago por confirmar: ${p.centro} · Plan ${p.plan} (${valor})`,
+    html: `
+      <div style="font-family:Arial,Helvetica,sans-serif;color:#0f172a;max-width:520px">
+        <h2 style="margin:0 0 12px;font-size:18px">Un centro va a pagar su suscripción</h2>
+        <p style="margin:0 0 16px;line-height:1.6">
+          <strong>${escapeHtml(p.centro)}</strong> abrió el link de Mercado Pago para pagar el
+          <strong>Plan ${escapeHtml(p.plan)}</strong> por <strong>${p.meses === 12 ? "12 meses" : "1 mes"}</strong>
+          (${valor}). Lo inició ${escapeHtml(p.admin)}.
+        </p>
+        <p style="margin:0 0 20px;line-height:1.6">Cuando veas el pago en tu cuenta de Mercado Pago, confírmalo en la plataforma para renovar la suscripción.</p>
+        <a href="${escapeHtml(p.url)}" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:10px 18px;border-radius:8px;font-weight:bold">Confirmar en la plataforma</a>
+        <p style="margin:20px 0 0;color:#94a3b8;font-size:12px">Con las credenciales de Mercado Pago configuradas, los pagos se confirman solos y este aviso deja de llegar.</p>
       </div>`,
   });
   if (error) throw new Error(`Resend: ${error.message}`);

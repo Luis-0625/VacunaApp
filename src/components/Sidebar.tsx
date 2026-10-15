@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  BarChart3, BellRing, Building2, CalendarDays, Globe, Megaphone, Package, ChevronsLeft, ChevronsRight, LayoutDashboard, LogOut, Pill, Syringe, UserCog, Users,
+  BarChart3, BellRing, Building2, CalendarDays, CreditCard, Globe, Megaphone, Package, ChevronsLeft, ChevronsRight, LayoutDashboard, LogOut, Pill, Syringe, UserCog, Users,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Avatar, LogoEstablecimiento } from "@/components/ui";
@@ -33,6 +33,7 @@ const SECCIONES: { titulo: string; items: Item[] }[] = [
       { href: "/dashboard/reportes", label: "Reportes", icon: BarChart3, roles: ["ADMIN"] },
       { href: "/dashboard/usuarios", label: "Usuarios", icon: UserCog, roles: ["ADMIN"] },
       { href: "/dashboard/establecimiento", label: "Establecimiento", icon: Building2, roles: ["ADMIN"] },
+      { href: "/dashboard/suscripcion", label: "Suscripción", icon: CreditCard, roles: ["ADMIN"] },
     ],
   },
 ];

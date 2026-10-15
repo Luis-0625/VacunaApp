@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendSolicitudPruebaEmail, type SolicitudPrueba } from "@/lib/notifications/email";
 import { enviarWhatsApp } from "@/lib/notifications/whatsapp";
 import { EMPRESA } from "@/lib/empresa";
+import { correosSuperadmins } from "@/lib/superadmins";
 
 export const dynamic = "force-dynamic";
 
@@ -58,12 +59,7 @@ export async function POST(request: NextRequest) {
 
 /** Al correo personal de los superadmins (dueños de la plataforma). */
 async function avisarPorCorreo(s: SolicitudPrueba) {
-  const db = createAdminClient();
-  const { data: admins, error } = await db.from("plataforma_admins").select("user_id");
-  if (error) throw error;
-  const correos = (
-    await Promise.all((admins ?? []).map(async (a) => (await db.auth.admin.getUserById(a.user_id)).data.user?.email))
-  ).filter((e): e is string => !!e);
+  const correos = await correosSuperadmins(createAdminClient());
   if (!correos.length) throw new Error("No hay superadmins con correo");
   await sendSolicitudPruebaEmail(correos, s);
 }

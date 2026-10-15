@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Plan } from "@/lib/suscripcion";
 
 /** Datos y marca de un centro de vacunación (tabla `centros`). */
 export interface Establecimiento {
@@ -19,6 +20,9 @@ export interface Establecimiento {
   /** Número propio de WhatsApp del centro (whatsapp:+57...); null = el de la plataforma. */
   whatsapp_from: string | null;
   activo: boolean;
+  plan: Plan;
+  /** Último día pagado de la suscripción (YYYY-MM-DD); null = sin vencimiento. */
+  suscripcion_vence: string | null;
 }
 
 /** Marca de la plataforma: login y páginas sin un centro identificado. */
@@ -32,6 +36,8 @@ export const ESTABLECIMIENTO_DEFAULT: Establecimiento = {
   cupos_por_dia: 0,
   whatsapp_from: null,
   activo: true,
+  plan: "PRUEBA",
+  suscripcion_vence: null,
 };
 
 /**

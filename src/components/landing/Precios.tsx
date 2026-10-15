@@ -3,20 +3,21 @@
 import { useState } from "react";
 import { Check } from "lucide-react";
 import type { Ancla } from "./anclas";
+import { PLANES as PLANES_PAGO } from "@/lib/suscripcion";
 
 export const PLANES: { nombre: string; mensual: number; anual: number; popular?: boolean; items: string[]; cta: string; ancla: Ancla }[] = [
   {
     nombre: "Básico",
-    mensual: 280_000,
-    anual: 2_800_000,
+    mensual: PLANES_PAGO.BASICO.mensual,
+    anual: PLANES_PAGO.BASICO.anual,
     items: ["Hasta 300 pacientes", "1 sede", "Recordatorios por WhatsApp + Email", "Inventario por lote", "Soporte por email"],
     cta: "Comenzar ahora",
     ancla: "prueba-basico",
   },
   {
     nombre: "Pro",
-    mensual: 480_000,
-    anual: 4_800_000,
+    mensual: PLANES_PAGO.PRO.mensual,
+    anual: PLANES_PAGO.PRO.anual,
     popular: true,
     items: ["Hasta 1.000 pacientes", "Hasta 3 sedes", "Bot conversacional 24/7", "Trazabilidad avanzada", "Soporte prioritario"],
     cta: "Probar gratis 6 días",
@@ -24,8 +25,8 @@ export const PLANES: { nombre: string; mensual: number; anual: number; popular?:
   },
   {
     nombre: "Enterprise",
-    mensual: 980_000,
-    anual: 9_800_000,
+    mensual: PLANES_PAGO.ENTERPRISE.mensual,
+    anual: PLANES_PAGO.ENTERPRISE.anual,
     items: ["Pacientes ilimitados", "Sedes ilimitadas", "Bot + API personalizada", "Soporte 24/7", "Capacitación dedicada"],
     cta: "Contactar ventas",
     ancla: "ventas-enterprise",

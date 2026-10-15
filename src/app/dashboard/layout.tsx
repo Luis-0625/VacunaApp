@@ -1,5 +1,7 @@
 import Sidebar from "@/components/Sidebar";
 import SinAcceso from "@/components/SinAcceso";
+import ControlSuscripcion from "@/components/ControlSuscripcion";
+import { estadoSuscripcion } from "@/lib/suscripcion";
 import { redirect } from "next/navigation";
 import { todayISO } from "@/lib/agenda";
 import { esSuperadmin, getPerfil } from "@/lib/auth";
@@ -21,7 +23,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
         establecimiento={{ nombre: est.nombre, ciudad: est.ciudad, logo_url: est.logo_url }}
         avisos={{ "/dashboard/inventario": alertas?.total ?? 0 }} />
       <main className="min-w-0 flex-1 px-5 py-6 pb-24 sm:px-8 sm:py-8 md:pb-8">
-        <div className="mx-auto max-w-6xl">{children}</div>
+        <div className="mx-auto max-w-6xl">
+          <ControlSuscripcion estado={estadoSuscripcion(perfil.suscripcion_vence, todayISO())} rol={perfil.rol}>
+            {children}
+          </ControlSuscripcion>
+        </div>
       </main>
     </div>
   );
