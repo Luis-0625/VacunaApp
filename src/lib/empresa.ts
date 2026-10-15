@@ -11,7 +11,7 @@ export const EMPRESA = {
   ciudad: "Sincelejo, Sucre, Colombia",
   email: process.env.NEXT_PUBLIC_CONTACTO_PRIVACIDAD ?? "",
   /** WhatsApp de ventas y soporte, solo dígitos con indicativo (ej. "573001234567"). */
-  whatsapp: "",
+  whatsapp: "573114097658",
 };
 
 /**
