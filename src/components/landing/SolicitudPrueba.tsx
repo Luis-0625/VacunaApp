@@ -65,18 +65,18 @@ export function SolicitudPrueba() {
     return (
       <div className="flex flex-col items-center rounded-2xl bg-surface p-10 text-center text-slate-700 shadow-xl">
         <CircleCheck className="h-12 w-12 text-emerald-600" />
-        <p className="mt-4 text-xl font-semibold text-slate-900">¡Recibimos tu solicitud, {form.nombre.split(" ")[0]}!</p>
+        <p className="mt-4 text-xl font-semibold text-slate-900">¡Recibimos tu solicitud, {primerNombre(form.nombre)}!</p>
         {EMPRESA.whatsapp ? (
           <>
             <p className="mt-2 max-w-md">Escríbenos ahora por WhatsApp y te atendemos de inmediato para {queQuiere}.</p>
             <a {...chat} className="mt-6 inline-flex items-center gap-2 rounded-lg bg-[#25d366] px-6 py-3 font-semibold text-white shadow-sm transition hover:brightness-105">
               <MessageCircle className="h-5 w-5" /> Continuar por WhatsApp
             </a>
-            <p className="mt-3 text-xs text-slate-500">O espera nuestra llamada al {form.telefono}.</p>
+            <p className="mt-3 text-xs text-slate-500">O espera nuestra llamada al {celularLegible(form.telefono)}.</p>
           </>
         ) : (
           <p className="mt-2 max-w-md">
-            Te contactaremos en menos de un día hábil al {form.telefono} o a {form.email} para {queQuiere}.
+            Te contactaremos en menos de un día hábil al {celularLegible(form.telefono)} o a {form.email.trim()} para {queQuiere}.
           </p>
         )}
         <button onClick={() => { setForm(VACIO); setEstado("listo"); }} className="mt-6 text-sm font-medium text-brand-600 hover:underline">
@@ -147,4 +147,16 @@ function Campo({ label, children }: { label: string; children: React.ReactNode }
       {children}
     </label>
   );
+}
+
+/** "luis rivera" -> "Luis". */
+function primerNombre(nombre: string) {
+  const n = nombre.trim().split(/\s+/)[0] ?? "";
+  return n.charAt(0).toLocaleUpperCase("es") + n.slice(1).toLocaleLowerCase("es");
+}
+
+/** "+573114097658", "311-409-7658" -> "311 409 7658". Otros formatos se muestran tal cual. */
+function celularLegible(telefono: string) {
+  const d = telefono.replace(/\D/g, "").replace(/^57(?=\d{10}$)/, "");
+  return /^\d{10}$/.test(d) ? `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}` : telefono.trim();
 }
