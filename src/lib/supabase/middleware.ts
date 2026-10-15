@@ -22,12 +22,12 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims verifica la firma del token en el servidor (llaves asimétricas del proyecto) sin consultar
+  // a Supabase en cada página, y renueva la sesión si el token venció.
+  const { data } = await supabase.auth.getClaims();
 
   const protegida = ["/dashboard", "/plataforma"].some((p) => request.nextUrl.pathname.startsWith(p));
-  if (!user && protegida) {
+  if (!data?.claims && protegida) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
