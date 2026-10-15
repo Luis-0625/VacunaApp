@@ -56,7 +56,19 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({ ok: true });
 }
 
+/**
+ * Va al correo de contacto de la empresa. Si Resend lo rechaza (en modo de prueba, sin dominio verificado,
+ * solo entrega al dueño de la cuenta), se envía a los superadmins para no perder la solicitud.
+ */
 async function avisarPorCorreo(s: SolicitudPrueba) {
+  if (EMPRESA.email) {
+    try {
+      await sendSolicitudPruebaEmail([EMPRESA.email], s);
+      return;
+    } catch (e) {
+      console.warn(`solicitud-prueba: no se pudo enviar a ${EMPRESA.email}, se envía a los superadmins`, e);
+    }
+  }
   const db = createAdminClient();
   const { data: admins, error } = await db.from("plataforma_admins").select("user_id");
   if (error) throw error;
