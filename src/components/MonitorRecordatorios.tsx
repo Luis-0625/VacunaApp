@@ -119,7 +119,7 @@ export default function MonitorRecordatorios() {
                       <span className="font-medium">{r.cita?.paciente.nombre_completo ?? "—"}</span>
                     </div>
                   </td>
-                  <td className="td text-slate-600">{r.cita?.vacuna.nombre} <span className="text-slate-400">· dosis {r.cita?.numero_dosis}</span></td>
+                  <td className="td text-slate-600">{r.cita?.vacuna.nombre} <span className="text-slate-400">· dosis {r.cita && r.cita.numero_dosis + 1}</span></td>
                   <td className="td text-slate-600">{formatDay(r.fecha_programada)}</td>
                   <td className="td"><Canal canal={r.canal} /></td>
                   <td className="td tabular-nums text-slate-600">{r.intentos}</td>

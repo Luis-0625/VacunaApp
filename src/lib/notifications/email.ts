@@ -2,14 +2,14 @@ import { Resend } from "resend";
 import { formatFechaLarga } from "@/lib/agenda";
 import { COLORES_MARCA, type Establecimiento } from "@/lib/establecimiento";
 import type { AlertaLote, AlertasInventario } from "@/lib/inventario-alertas";
+import { enumerar, nombresPacientes, porPaciente, type DosisMensaje } from "@/lib/mensaje-citas";
 
 export interface ReminderEmailInput {
   to: string;
   establecimiento: Establecimiento;
-  nombrePaciente: string;
-  vacuna: string;
-  numeroDosis: number;
   fechaProximaDosis: string; // YYYY-MM-DD
+  /** Dosis de mañana para este correo: varias si el paciente tiene varias vacunas o comparte el correo. */
+  dosis: DosisMensaje[];
 }
 
 export async function sendReminderEmail(input: ReminderEmailInput): Promise<void> {
@@ -19,6 +19,8 @@ export async function sendReminderEmail(input: ReminderEmailInput): Promise<void
   const est = input.establecimiento;
   const color = COLORES_MARCA.find((c) => c.id === est.color)?.muestra ?? "rgb(37 99 235)";
   const fecha = formatFechaLarga(input.fechaProximaDosis);
+  const pacientes = porPaciente(input.dosis);
+  const dosisHtml = (d: DosisMensaje) => `la dosis <strong>${d.dosis}</strong> de <strong>${escapeHtml(d.vacuna)}</strong>`;
   const contacto = [
     est.direccion && `📍 ${escapeHtml([est.direccion, est.ciudad].filter(Boolean).join(", "))}`,
     est.horario && `🕒 ${escapeHtml(est.horario)}`,
@@ -30,7 +32,9 @@ export async function sendReminderEmail(input: ReminderEmailInput): Promise<void
     from: process.env.RESEND_FROM ?? `${est.nombre} <onboarding@resend.dev>`,
     replyTo: est.email ?? undefined,
     to: input.to,
-    subject: `Recordatorio: tu dosis de ${input.vacuna} es mañana`,
+    subject: input.dosis.length === 1
+      ? `Recordatorio: tu dosis de ${input.dosis[0].vacuna} es mañana`
+      : `Recordatorio: citas de vacunación de mañana`,
     html: `
       <div style="background:#f6f7f9;padding:24px 12px;font-family:Arial,Helvetica,sans-serif;color:#0f172a">
         <div style="max-width:520px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden">
@@ -39,9 +43,14 @@ export async function sendReminderEmail(input: ReminderEmailInput): Promise<void
             <strong style="font-size:16px;vertical-align:middle">${escapeHtml(est.nombre)}</strong>
           </div>
           <div style="padding:24px">
-            <h2 style="margin:0 0 12px;font-size:20px">Hola ${escapeHtml(input.nombrePaciente)},</h2>
-            <p style="margin:0 0 16px;line-height:1.6">Te recordamos que <strong>mañana, ${fecha}</strong>,
-            te corresponde la dosis <strong>${input.numeroDosis}</strong> de <strong>${escapeHtml(input.vacuna)}</strong>.</p>
+            <h2 style="margin:0 0 12px;font-size:20px">Hola ${escapeHtml(nombresPacientes(input.dosis))},</h2>
+            ${pacientes.length === 1
+              ? `<p style="margin:0 0 16px;line-height:1.6">Te recordamos que <strong>mañana, ${fecha}</strong>,
+                 te corresponde ${enumerar(input.dosis.map(dosisHtml))}.</p>`
+              : `<p style="margin:0 0 8px;line-height:1.6">Les recordamos que <strong>mañana, ${fecha}</strong>, tienen cita:</p>
+                 <ul style="margin:0 0 16px;padding-left:20px;line-height:1.7">
+                   ${pacientes.map((p) => `<li><strong>${escapeHtml(p.nombre)}:</strong> ${enumerar(p.dosis.map(dosisHtml))}</li>`).join("")}
+                 </ul>`}
             ${contacto ? `<p style="margin:0 0 16px;padding:12px 16px;background:#f8fafc;border-radius:8px;line-height:1.7;font-size:14px">${contacto}</p>` : ""}
             <p style="margin:0;color:#475569;font-size:14px;line-height:1.6">Si no puedes asistir, responde al WhatsApp del recordatorio o comunícate con nosotros para reprogramar tu cita.</p>
           </div>

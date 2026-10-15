@@ -4,6 +4,7 @@ import { REMINDER_SELECT } from "@/lib/reminder-select";
 import { toE164 } from "@/lib/phone";
 import { datosContacto, getEstablecimiento, type Establecimiento } from "@/lib/establecimiento";
 import { enviosCampanaActivos, responderCampana } from "@/lib/campanas";
+import { enumerar, nombresPacientes, porPaciente, type DosisMensaje } from "@/lib/mensaje-citas";
 import type { AutorizaMensajes, RecordatorioDetalle } from "@/types/db";
 
 type Detalle = RecordatorioDetalle & { cita: NonNullable<RecordatorioDetalle["cita"]> };
@@ -13,11 +14,42 @@ const INSTRUCCIONES = "Responde *1* para CONFIRMAR tu cita o *2* para REPROGRAMA
 /** Minúsculas y sin tildes: "Sí" -> "si". */
 const normalizar = (s: string) => s.trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 
-const nombres = (rs: Detalle[]) =>
-  rs.map((r) => r.cita.paciente.nombre_completo.split(/\s+/)[0]).join(" y ");
+/** Dosis pendientes de los recordatorios (la cita guarda la dosis ya aplicada; corresponde la siguiente). */
+const dosisDe = (rs: Detalle[]): DosisMensaje[] => rs.map((r) => ({
+  pacienteId: r.cita.paciente.id,
+  nombre: r.cita.paciente.nombre_completo,
+  vacuna: r.cita.vacuna.nombre,
+  dosis: r.cita.numero_dosis + 1,
+}));
 
-const listaVacunas = (rs: Detalle[]) =>
-  rs.map((r) => `${r.cita.vacuna.nombre} (dosis ${r.cita.numero_dosis})`).join(", ");
+const nombres = (rs: Detalle[]) => nombresPacientes(dosisDe(rs));
+
+/** Un paciente: "Hepatitis B (dosis 2) y Polio (dosis 3)". Varios con el mismo teléfono: una línea por paciente. */
+function listaVacunas(rs: Detalle[]) {
+  const ps = porPaciente(dosisDe(rs));
+  const vacunas = (ds: DosisMensaje[]) => enumerar(ds.map((d) => `${d.vacuna} (dosis ${d.dosis})`));
+  return ps.length === 1 ? vacunas(ps[0].dosis) : "\n" + ps.map((p) => `• ${p.nombre}: ${vacunas(p.dosis)}`).join("\n");
+}
+
+/**
+ * Descarta los recordatorios de dosis que ya se aplicaron: si el paciente tiene una cita posterior de la
+ * misma vacuna, el recordatorio de la anterior (ya enviado) quedó obsoleto.
+ */
+async function sinDosisYaAplicadas(db: SupabaseClient, rs: Detalle[]): Promise<Detalle[]> {
+  if (rs.length === 0) return rs;
+  const { data, error } = await db
+    .from("citas_vacunacion")
+    .select("paciente_id, vacuna_id, numero_dosis")
+    .in("paciente_id", [...new Set(rs.map((r) => r.cita.paciente_id))])
+    .neq("estado", "CANCELADA");
+  if (error) throw new Error(error.message);
+  const ultima = new Map<string, number>();
+  for (const c of data ?? []) {
+    const k = `${c.paciente_id}|${c.vacuna_id}`;
+    ultima.set(k, Math.max(ultima.get(k) ?? 0, c.numero_dosis));
+  }
+  return rs.filter((r) => r.cita.numero_dosis >= (ultima.get(`${r.cita.paciente_id}|${r.cita.vacuna_id}`) ?? 0));
+}
 
 /**
  * Procesa un mensaje entrante de WhatsApp/SMS y devuelve el texto de respuesta.
@@ -96,8 +128,7 @@ async function responder(
   // Primero quien está eligiendo fecha, luego el recordatorio enviado más reciente y después la cita más próxima.
   // Así el paciente puede escribir en cualquier momento (aunque ya haya confirmado) para confirmar, adelantar
   // o aplazar su próxima cita.
-  const activos = (data ?? [])
-    .filter((r): r is Detalle => !!r.cita)
+  const activos = (await sinDosisYaAplicadas(db, (data ?? []).filter((r): r is Detalle => !!r.cita)))
     .sort((a, b) =>
       (b.confirmacion === "REPROGRAMANDO" ? 1 : 0) - (a.confirmacion === "REPROGRAMANDO" ? 1 : 0) ||
       Date.parse(b.enviado_at ?? "1970-01-01") - Date.parse(a.enviado_at ?? "1970-01-01") ||
@@ -243,6 +274,6 @@ async function reprogramar(db: SupabaseClient, rs: Detalle[], nuevaFecha: string
   }
 
   return `✅ Listo, ${nombres(rs)}. Tu cita quedó reprogramada para el *${formatFechaLarga(nuevaFecha)}* ` +
-    `(${listaVacunas(rs)}).` +
+    `para: ${listaVacunas(rs)}.` +
     (sinRecordatorio ? " ¡Te esperamos!" : " Te enviaremos un recordatorio el día anterior.");
 }

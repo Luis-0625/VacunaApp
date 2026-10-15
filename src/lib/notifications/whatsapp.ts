@@ -1,6 +1,7 @@
 import twilio from "twilio";
 import { formatFechaLarga } from "@/lib/agenda";
 import { datosContacto, type Establecimiento } from "@/lib/establecimiento";
+import { enumerar, nombresPacientes, porPaciente, type DosisMensaje } from "@/lib/mensaje-citas";
 
 /**
  * WhatsApp se envía con Twilio. Los mensajes que inicia el centro (recordatorio, campaña, carné)
@@ -20,10 +21,9 @@ const PLANTILLA_TWILIO: Record<ClavePlantilla, string | undefined> = {
 export interface ReminderMessageInput {
   to: string; // E.164, ej. +573001234567
   establecimiento: Establecimiento;
-  nombrePaciente: string;
-  vacuna: string;
-  numeroDosis: number;
   fechaProximaDosis: string;
+  /** Dosis de mañana para este teléfono: varias si el paciente tiene varias vacunas o comparte el número. */
+  dosis: DosisMensaje[];
 }
 
 /**
@@ -66,24 +66,39 @@ export async function enviarWhatsApp(input: {
 }
 
 /**
- * Recordatorio del día anterior. Plantilla RECORDATORIO:
- * {{1}} nombre, {{2}} fecha, {{3}} dosis, {{4}} vacuna, {{5}} centro.
+ * Recordatorio del día anterior: un solo mensaje con todas las dosis de mañana para ese teléfono.
+ * Plantilla RECORDATORIO: {{1}} nombre, {{2}} fecha, {{3}} dosis, {{4}} vacuna, {{5}} centro. Con varias
+ * dosis, {{3}} es la primera y {{4}} sigue la frase: "la dosis {{3}} de Hepatitis B y la dosis 1 de Polio".
  */
 export async function sendReminderWhatsApp(input: ReminderMessageInput): Promise<void> {
   const fecha = formatFechaLarga(input.fechaProximaDosis);
   const est = input.establecimiento;
   const contacto = datosContacto(est);
+  const pacientes = porPaciente(input.dosis);
+  const varios = pacientes.length > 1;
+  // Si comparten teléfono, cada dosis lleva el nombre de su paciente
+  const quien = (d: DosisMensaje) => (varios ? ` (${pacientes.find((p) => p.dosis.includes(d))!.nombre})` : "");
+  const [primera, ...resto] = input.dosis;
+
+  const detalle = varios
+    ? `les recordamos que mañana ${fecha} tienen cita en *${est.nombre}*:\n` +
+      pacientes.map((p) => `• ${p.nombre}: ${enumerar(p.dosis.map((d) => `dosis ${d.dosis} de ${d.vacuna}`))}`).join("\n")
+    : `te recordamos que mañana ${fecha} te corresponde ` +
+      `${enumerar(input.dosis.map((d) => `la dosis ${d.dosis} de ${d.vacuna}`))} en *${est.nombre}*.`;
 
   await enviarWhatsApp({
     to: input.to,
     from: est.whatsapp_from,
     plantilla: {
       clave: "RECORDATORIO",
-      variables: [input.nombrePaciente, fecha, String(input.numeroDosis), input.vacuna, est.nombre],
+      variables: [
+        nombresPacientes(input.dosis), fecha, String(primera.dosis),
+        enumerar([`${primera.vacuna}${quien(primera)}`, ...resto.map((d) => `la dosis ${d.dosis} de ${d.vacuna}${quien(d)}`)]),
+        est.nombre,
+      ],
     },
     body:
-      `Hola ${input.nombrePaciente}, te recordamos que mañana ${fecha} ` +
-      `te corresponde la dosis ${input.numeroDosis} de ${input.vacuna} en *${est.nombre}*.\n\n` +
+      `Hola ${nombresPacientes(input.dosis)}, ${detalle}\n\n` +
       (contacto ? `${contacto}\n\n` : "") +
       `Responde *1* para CONFIRMAR o *2* para REPROGRAMAR.\n\n` +
       `_Si no deseas recibir más mensajes, responde SALIR._`,

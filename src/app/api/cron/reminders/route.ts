@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { processReminder, tomorrowISO } from "@/lib/reminders";
+import { processReminders, tomorrowISO } from "@/lib/reminders";
 import { REMINDER_SELECT } from "@/lib/reminder-select";
 import { aEstablecimiento } from "@/lib/establecimiento";
 import { todayISO } from "@/lib/agenda";
@@ -35,9 +35,10 @@ export async function GET(request: NextRequest) {
   // Los recordatorios de un centro suspendido no se envían
   const { data: centros } = await db.from("centros").select("*").eq("activo", true);
   const porCentro = new Map((centros ?? []).map((c) => [c.id as string, aEstablecimiento(c)]));
-  for (const r of data ?? []) {
-    const establecimiento = porCentro.get(r.centro_id);
-    if (establecimiento) results.push(await processReminder(db, r, establecimiento));
+  // Por centro, para que processReminders junte en un solo mensaje las dosis del mismo teléfono o correo
+  for (const [centroId, establecimiento] of porCentro) {
+    const delCentro = (data ?? []).filter((r) => r.centro_id === centroId);
+    if (delCentro.length) results.push(...(await processReminders(db, delCentro, establecimiento)));
   }
 
   // Alertas de inventario: un email por centro a sus administradores, solo si hay algo que atender

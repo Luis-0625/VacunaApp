@@ -111,7 +111,7 @@ export default async function DashboardPage() {
                 <Avatar name={c.paciente.nombre_completo} />
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-medium">{c.paciente.nombre_completo}</div>
-                  <div className="truncate text-xs text-slate-500">{c.vacuna.nombre} · dosis {c.numero_dosis}</div>
+                  <div className="truncate text-xs text-slate-500">{c.vacuna.nombre} · dosis {c.numero_dosis + 1}</div>
                 </div>
                 <div className="text-right">
                   <div className="text-sm font-medium">{formatDay(c.fecha_proxima_dosis)}</div>

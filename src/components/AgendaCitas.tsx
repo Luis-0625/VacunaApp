@@ -186,7 +186,7 @@ export default function AgendaCitas() {
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-sm font-medium">{c.paciente.nombre_completo}</div>
                       <div className="flex flex-wrap items-center gap-x-3 text-xs text-slate-500">
-                        <span>{c.vacuna.nombre} · dosis {c.numero_dosis}</span>
+                        <span>{c.vacuna.nombre} · dosis {c.numero_dosis + 1}</span>
                         <span className="inline-flex items-center gap-1"><Phone size={11} />{c.paciente.telefono}</span>
                       </div>
                     </div>
