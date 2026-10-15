@@ -104,6 +104,52 @@ export async function sendAlertasInventarioEmail(input: {
   if (error) throw new Error(`Resend: ${error.message}`);
 }
 
+export interface SolicitudPrueba {
+  tipo: "prueba" | "demostracion";
+  nombre: string;
+  centro: string;
+  ciudad: string;
+  telefono: string;
+  email: string;
+  plan: string;
+  mensaje: string;
+}
+
+/** Aviso a los superadmins de que un centro pidió la prueba gratis o una demostración desde la landing. */
+export async function sendSolicitudPruebaEmail(to: string[], s: SolicitudPrueba): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) throw new Error("RESEND_API_KEY no configurada");
+
+  const asunto = s.tipo === "prueba" ? "Nueva solicitud de prueba gratis" : "Nueva solicitud de demostración";
+  const whatsapp = s.telefono.replace(/\D/g, "");
+  const filas = [
+    ["Nombre", escapeHtml(s.nombre)],
+    ["Centro / IPS", escapeHtml(s.centro)],
+    ["Ciudad", escapeHtml(s.ciudad)],
+    ["Teléfono", `${escapeHtml(s.telefono)} · <a href="https://wa.me/${whatsapp.length === 10 ? `57${whatsapp}` : whatsapp}">abrir WhatsApp</a>`],
+    ["Correo", `<a href="mailto:${escapeHtml(s.email)}">${escapeHtml(s.email)}</a>`],
+    ["Plan", escapeHtml(s.plan)],
+    ...(s.mensaje ? [["Mensaje", escapeHtml(s.mensaje).replace(/\n/g, "<br>")]] : []),
+  ];
+
+  const resend = new Resend(apiKey);
+  const { error } = await resend.emails.send({
+    from: process.env.RESEND_FROM ?? "VacunaApp <onboarding@resend.dev>",
+    replyTo: s.email,
+    to,
+    subject: `${asunto}: ${s.centro}`,
+    html: `
+      <div style="font-family:Arial,Helvetica,sans-serif;color:#0f172a;max-width:520px">
+        <h2 style="margin:0 0 16px;font-size:18px">${asunto}</h2>
+        <table style="border-collapse:collapse;font-size:14px;line-height:1.5">
+          ${filas.map(([k, v]) => `<tr><td style="padding:6px 16px 6px 0;color:#64748b;vertical-align:top">${k}</td><td style="padding:6px 0">${v}</td></tr>`).join("")}
+        </table>
+        <p style="margin:20px 0 0;color:#94a3b8;font-size:12px">Enviado desde el formulario de la página de inicio de VacunaApp. Responde este correo para escribirle directamente.</p>
+      </div>`,
+  });
+  if (error) throw new Error(`Resend: ${error.message}`);
+}
+
 function escapeHtml(s: string) {
   return s.replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!

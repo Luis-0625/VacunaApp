@@ -1,30 +1,27 @@
 "use client";
 
-import { Monitor, Moon, Sun } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 import { CLAVE_TEMA as CLAVE, type Tema } from "@/lib/tema";
 import { useLocalStorage } from "@/lib/use-local-storage";
 
 const OPCIONES: { id: Tema; label: string; icon: typeof Sun }[] = [
-  { id: "claro", label: "Claro", icon: Sun },
+  { id: "claro", label: "Predeterminado", icon: Sun },
   { id: "oscuro", label: "Oscuro", icon: Moon },
-  { id: "sistema", label: "Sistema", icon: Monitor },
 ];
 
-/** Selector Claro / Oscuro / Sistema. `compacto` muestra un solo botón que alterna. */
+/** Selector Predeterminado / Oscuro. `compacto` muestra un solo botón que alterna. */
 export default function SelectorTema({ compacto = false }: { compacto?: boolean }) {
   const [guardado, guardar] = useLocalStorage(CLAVE, "claro");
-  const tema: Tema = guardado === "oscuro" || guardado === "sistema" ? guardado : "claro";
+  const tema: Tema = guardado === "oscuro" ? "oscuro" : "claro";
 
   function elegir(t: Tema) {
     guardar(t);
-    const oscuro = t === "oscuro" || (t === "sistema" && window.matchMedia("(prefers-color-scheme: dark)").matches);
-    document.documentElement.classList.toggle("dark", oscuro);
+    document.documentElement.classList.toggle("dark", t === "oscuro");
   }
 
   if (compacto) {
-    const i = OPCIONES.findIndex((o) => o.id === tema);
-    const actual = OPCIONES[i];
-    const siguiente = OPCIONES[(i + 1) % OPCIONES.length];
+    const actual = OPCIONES.find((o) => o.id === tema)!;
+    const siguiente = OPCIONES.find((o) => o.id !== tema)!;
     return (
       <button type="button" onClick={() => elegir(siguiente.id)}
         title={`Tema: ${actual.label} (cambiar a ${siguiente.label})`} aria-label={`Tema: ${actual.label}`}
@@ -35,7 +32,7 @@ export default function SelectorTema({ compacto = false }: { compacto?: boolean 
   }
 
   return (
-    <div role="radiogroup" aria-label="Tema" className="grid grid-cols-3 gap-0.5 rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+    <div role="radiogroup" aria-label="Tema" className="grid grid-cols-2 gap-0.5 rounded-lg border border-slate-200 bg-slate-50 p-0.5">
       {OPCIONES.map(({ id, label, icon: Icon }) => (
         <button key={id} type="button" role="radio" aria-checked={tema === id} onClick={() => elegir(id)} title={label}
           className={`flex items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-medium transition ${
