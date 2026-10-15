@@ -87,7 +87,7 @@ export function SolicitudPrueba() {
   }
 
   return (
-    <form onSubmit={enviar} className="rounded-2xl bg-surface p-6 text-left shadow-xl sm:p-8">
+    <form onSubmit={enviar} className="rounded-2xl bg-surface p-6 text-left text-slate-900 shadow-xl sm:p-8">
       <div role="radiogroup" aria-label="¿Qué necesitas?" className="grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1 text-sm">
         {([
           ["prueba", "Prueba gratis 6 días"],
