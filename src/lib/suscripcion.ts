@@ -24,6 +24,9 @@ export const LINKS_PAGO: Partial<Record<`${PlanPago}-${1 | 12}`, string>> = {
   "BASICO-1": "https://mpago.li/1CXLn5a", // $280.000
   "PRO-1": "https://mpago.li/1PJriua", // $480.000
   "ENTERPRISE-1": "https://mpago.li/1L7EMKk", // $980.000
+  "BASICO-12": "https://mpago.li/2xi9Pz8", // $2.800.000
+  "PRO-12": "https://mpago.li/2tBPHox", // $4.800.000
+  "ENTERPRISE-12": "https://mpago.li/1QFyCKc", // $9.800.000
 };
 
 export const linkPago = (plan: PlanPago, meses: 1 | 12) => LINKS_PAGO[`${plan}-${meses}`] ?? null;
