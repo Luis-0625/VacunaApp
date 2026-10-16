@@ -214,7 +214,7 @@ function Encabezado() {
         <div className="flex items-center gap-1 sm:gap-2">
           <SelectorTema compacto />
           <BotonAcceso />
-          <a href="#prueba" className="btn-primary hidden py-2 sm:inline-flex">
+          <a href="#prueba" className="btn-primary hidden py-2 md:inline-flex">
             Prueba gratis
           </a>
           <MenuMovil enlaces={ENLACES_MENU} />

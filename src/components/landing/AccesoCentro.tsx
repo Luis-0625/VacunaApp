@@ -20,16 +20,16 @@ export function useSesion() {
   return email;
 }
 
-/** Botón del encabezado: "Iniciar sesión" o, si ya hay sesión, "Ir a mi panel". En celular solo el ícono. */
+/** Botón del encabezado: "Iniciar sesión" o, si ya hay sesión, "Ir a mi panel". En pantallas pequeñas va dentro del menú. */
 export function BotonAcceso() {
   const email = useSesion();
   const Icono = email ? LayoutDashboard : LogIn;
   const texto = email ? "Ir a mi panel" : "Iniciar sesión";
   return (
-    <Link href={email ? "/dashboard" : "/login"} aria-label={texto} title={email ?? undefined}
-      className="inline-flex items-center gap-2 rounded-lg border border-slate-200 p-2 text-sm font-medium text-slate-700 transition hover:border-brand-300 hover:text-brand-700 sm:px-3.5">
+    <Link href={email ? "/dashboard" : "/login"} title={email ?? undefined}
+      className="hidden items-center gap-2 rounded-lg border border-slate-200 px-3.5 py-2 text-sm font-medium text-slate-700 transition hover:border-brand-300 hover:text-brand-700 md:inline-flex">
       <Icono className="h-4 w-4" />
-      <span className="hidden sm:inline">{texto}</span>
+      {texto}
     </Link>
   );
 }
