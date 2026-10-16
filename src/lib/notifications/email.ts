@@ -234,24 +234,24 @@ function escapeHtml(s: string) {
   );
 }
 
-/** Enlace para crear una contraseña nueva (válido 1 hora, un solo uso). */
-export async function sendRecuperacionEmail(input: { to: string; nombre: string | null; url: string }): Promise<void> {
+/** Código de verificación para crear una contraseña nueva (válido 1 hora, un solo uso). */
+export async function sendRecuperacionEmail(input: { to: string; nombre: string | null; codigo: string }): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) throw new Error("RESEND_API_KEY no configurada");
   const resend = new Resend(apiKey);
   const { error } = await resend.emails.send({
     from: process.env.RESEND_FROM ?? "VacunaApp <onboarding@resend.dev>",
     to: input.to,
-    subject: "Restablece tu contraseña de VacunaApp",
+    subject: `${input.codigo} es tu código para restablecer la contraseña de VacunaApp`,
     html: `
       <div style="background:#f6f7f9;padding:24px 12px;font-family:Arial,Helvetica,sans-serif;color:#0f172a">
         <div style="max-width:520px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden">
           <div style="padding:20px 24px;border-bottom:3px solid rgb(37 99 235)"><strong style="font-size:16px">VacunaApp</strong></div>
           <div style="padding:24px">
             <h2 style="margin:0 0 12px;font-size:20px">Hola${input.nombre ? ` ${escapeHtml(input.nombre)}` : ""},</h2>
-            <p style="margin:0 0 20px;line-height:1.6">Recibimos una solicitud para restablecer la contraseña de tu cuenta. Haz clic en el botón para crear una nueva:</p>
-            <p style="margin:0 0 20px"><a href="${escapeHtml(input.url)}" style="display:inline-block;background:rgb(37 99 235);color:#fff;text-decoration:none;font-weight:bold;padding:12px 22px;border-radius:8px">Crear nueva contraseña</a></p>
-            <p style="margin:0;color:#475569;font-size:14px;line-height:1.6">El enlace vence en 1 hora y solo se puede usar una vez. Si no lo pediste, ignora este correo: tu contraseña actual sigue funcionando.</p>
+            <p style="margin:0 0 20px;line-height:1.6">Recibimos una solicitud para restablecer la contraseña de tu cuenta. Escribe este código en VacunaApp para continuar:</p>
+            <p style="margin:0 0 20px;padding:16px;background:#eff6ff;border-radius:10px;text-align:center;font-size:32px;font-weight:bold;letter-spacing:8px;font-family:'Courier New',monospace;color:#1e3a8a">${escapeHtml(input.codigo)}</p>
+            <p style="margin:0;color:#475569;font-size:14px;line-height:1.6">El código vence en 1 hora y solo se puede usar una vez. <strong>No lo compartas con nadie</strong>: el equipo de VacunaApp nunca te lo pedirá. Si no solicitaste el cambio, ignora este correo; tu contraseña actual sigue funcionando.</p>
           </div>
         </div>
       </div>`,
