@@ -245,7 +245,7 @@ export default function AtrasadosManager({
       </section>
 
       {esAdmin && sel.size > 0 && (
-        <div className="sticky bottom-20 z-30 md:bottom-4">
+        <div className="sticky bottom-4 z-30">
           <div className="card mx-auto flex max-w-xl items-center justify-between gap-3 px-4 py-3 shadow-lg">
             <span className="text-sm"><strong className="tabular-nums">{sel.size}</strong> {sel.size === 1 ? "paciente seleccionado" : "pacientes seleccionados"}</span>
             <div className="flex gap-2">
