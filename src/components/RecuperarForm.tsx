@@ -7,6 +7,8 @@ import { ArrowLeft, MailCheck, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import CampoContrasena from "@/components/CampoContrasena";
 
+const DIGITOS = 5; // mismo valor que en lib/recuperacion (ese archivo es solo de servidor)
+
 type Paso = "correo" | "codigo" | "clave";
 
 const PASOS: { id: Paso; texto: string }[] = [
@@ -15,12 +17,13 @@ const PASOS: { id: Paso; texto: string }[] = [
   { id: "clave", texto: "Nueva contraseña" },
 ];
 
-/** Recuperación en tres pasos: pedir el código, confirmarlo y solo entonces cambiar la contraseña. */
+/** Recuperación en tres pasos: pedir el código de 5 dígitos, confirmarlo y solo entonces cambiar la contraseña. */
 export default function RecuperarForm({ emailInicial }: { emailInicial: string }) {
   const router = useRouter();
   const [paso, setPaso] = useState<Paso>("correo");
   const [email, setEmail] = useState(emailInicial);
   const [codigo, setCodigo] = useState("");
+  const [token, setToken] = useState("");
   const [password, setPassword] = useState("");
   const [confirmacion, setConfirmacion] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -56,9 +59,13 @@ export default function RecuperarForm({ emailInicial }: { emailInicial: string }
     setLoading(true);
     setError(null);
     setAviso(null);
-    const { error } = await createClient().auth.verifyOtp({ email, token: codigo.trim(), type: "recovery" });
+    const res = await fetch("/api/auth/recuperar/verificar", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, codigo }),
+    }).catch(() => null);
+    const data = await res?.json().catch(() => null);
     setLoading(false);
-    if (error) return setError("El código no es correcto o ya venció.");
+    if (!res?.ok || !data?.token) return setError(data?.error ?? "Sin conexión. Intenta de nuevo.");
+    setToken(data.token);
     setPaso("clave");
   }
 
@@ -68,11 +75,18 @@ export default function RecuperarForm({ emailInicial }: { emailInicial: string }
     if (password !== confirmacion) return setError("Las contraseñas no coinciden");
     setLoading(true);
     setError(null);
-    const { error } = await createClient().auth.updateUser({ password });
-    if (error) {
+    const res = await fetch("/api/auth/recuperar/cambiar", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, token, password }),
+    }).catch(() => null);
+    const data = await res?.json().catch(() => null);
+    if (!res?.ok) {
       setLoading(false);
-      return setError(error.code === "same_password" ? "La contraseña nueva debe ser diferente a la anterior" : error.message);
+      if (data?.vencido) { setPaso("correo"); setCodigo(""); }
+      return setError(data?.error ?? "Sin conexión. Intenta de nuevo.");
     }
+    // Contraseña guardada: entra directo con ella
+    const { error } = await createClient().auth.signInWithPassword({ email, password });
+    if (error) return router.replace("/login");
     router.replace("/dashboard");
     router.refresh();
   }
@@ -119,17 +133,17 @@ export default function RecuperarForm({ emailInicial }: { emailInicial: string }
             <MailCheck className="h-5 w-5 shrink-0 text-brand-600" />
             <p>
               Si <strong>{email}</strong> tiene una cuenta, le enviamos un código de verificación. Revisa también la carpeta
-              de spam. Vence en 1 hora.
+              de spam. Vence en 15 minutos.
             </p>
           </div>
           <label className="block space-y-1.5">
             <span className="text-sm font-medium text-slate-700">Código de verificación</span>
-            <input required inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6,10}" maxLength={10}
-              value={codigo} onChange={(e) => setCodigo(e.target.value.replace(/\D/g, ""))} placeholder="000000" autoFocus
+            <input required inputMode="numeric" autoComplete="one-time-code" pattern={`[0-9]{${DIGITOS}}`} maxLength={DIGITOS}
+              value={codigo} onChange={(e) => setCodigo(e.target.value.replace(/\D/g, ""))} placeholder={"0".repeat(DIGITOS)} autoFocus
               className="input text-center font-mono text-2xl tracking-[0.5em]" />
           </label>
           {mensajes}
-          <button disabled={loading || codigo.length < 6} className="btn-primary w-full justify-center py-2.5">
+          <button disabled={loading || codigo.length < DIGITOS} className="btn-primary w-full justify-center py-2.5">
             {loading ? "Verificando…" : "Confirmar código"}
           </button>
           <div className="flex items-center justify-between text-sm">

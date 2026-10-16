@@ -234,7 +234,7 @@ function escapeHtml(s: string) {
   );
 }
 
-/** Código de verificación para crear una contraseña nueva (válido 1 hora, un solo uso). */
+/** Código de verificación para crear una contraseña nueva (válido 15 minutos, un solo uso). */
 export async function sendRecuperacionEmail(input: { to: string; nombre: string | null; codigo: string }): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) throw new Error("RESEND_API_KEY no configurada");
@@ -251,7 +251,7 @@ export async function sendRecuperacionEmail(input: { to: string; nombre: string 
             <h2 style="margin:0 0 12px;font-size:20px">Hola${input.nombre ? ` ${escapeHtml(input.nombre)}` : ""},</h2>
             <p style="margin:0 0 20px;line-height:1.6">Recibimos una solicitud para restablecer la contraseña de tu cuenta. Escribe este código en VacunaApp para continuar:</p>
             <p style="margin:0 0 20px;padding:16px;background:#eff6ff;border-radius:10px;text-align:center;font-size:32px;font-weight:bold;letter-spacing:8px;font-family:'Courier New',monospace;color:#1e3a8a">${escapeHtml(input.codigo)}</p>
-            <p style="margin:0;color:#475569;font-size:14px;line-height:1.6">El código vence en 1 hora y solo se puede usar una vez. <strong>No lo compartas con nadie</strong>: el equipo de VacunaApp nunca te lo pedirá. Si no solicitaste el cambio, ignora este correo; tu contraseña actual sigue funcionando.</p>
+            <p style="margin:0;color:#475569;font-size:14px;line-height:1.6">El código vence en 15 minutos y solo se puede usar una vez. <strong>No lo compartas con nadie</strong>: el equipo de VacunaApp nunca te lo pedirá. Si no solicitaste el cambio, ignora este correo; tu contraseña actual sigue funcionando.</p>
           </div>
         </div>
       </div>`,
