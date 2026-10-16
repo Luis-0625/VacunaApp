@@ -1,11 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
-import { LogIn, Menu, X } from "lucide-react";
+import { ArrowRight, ChevronRight, CircleHelp, Menu, MessageCircle, Sparkles, Tag, X } from "lucide-react";
+import { TarjetaAcceso } from "./AccesoCentro";
+
+const ICONOS: Record<string, typeof Menu> = {
+  "#funciones": Sparkles,
+  "#demo": MessageCircle,
+  "#precios": Tag,
+  "#faq": CircleHelp,
+};
 
 /** Menú hamburguesa de la landing para pantallas pequeñas, donde no caben los enlaces del encabezado. */
-export function MenuMovil({ enlaces }: { enlaces: { href: string; texto: string }[] }) {
+export function MenuMovil({ enlaces }: { enlaces: { href: string; texto: string; detalle: string }[] }) {
   const [abierto, setAbierto] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -33,22 +40,35 @@ export function MenuMovil({ enlaces }: { enlaces: { href: string; texto: string 
       </button>
 
       {abierto && (
-        <div id="menu-movil" className="absolute inset-x-0 top-16 z-40 border-b border-slate-200 bg-surface px-4 pb-5 pt-2 shadow-lg sm:px-6">
+        <div id="menu-movil"
+          className="absolute inset-x-0 top-16 z-40 max-h-[calc(100dvh-4rem)] overflow-y-auto border-b border-slate-200 bg-surface px-4 pb-5 pt-4 shadow-xl sm:px-6">
+          <TarjetaAcceso alElegir={cerrar} />
+
+          <p className="mb-1 mt-5 px-1 text-xs font-semibold uppercase tracking-wider text-slate-400">Conoce VacunaApp</p>
           <nav className="flex flex-col">
-            {enlaces.map((e) => (
-              <a key={e.href} href={e.href} onClick={cerrar}
-                className="border-b border-slate-100 py-3.5 text-base font-medium text-slate-700 hover:text-brand-600">
-                {e.texto}
-              </a>
-            ))}
+            {enlaces.map((e) => {
+              const Icono = ICONOS[e.href] ?? ChevronRight;
+              return (
+                <a key={e.href} href={e.href} onClick={cerrar}
+                  className="group flex items-center gap-3 rounded-lg px-1 py-2.5 transition hover:bg-slate-50">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-600 transition group-hover:bg-brand-50 group-hover:text-brand-600">
+                    <Icono className="h-4 w-4" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-medium text-slate-900">{e.texto}</span>
+                    <span className="block truncate text-xs text-slate-500">{e.detalle}</span>
+                  </span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-slate-300" />
+                </a>
+              );
+            })}
           </nav>
-          <div className="mt-5 grid gap-2.5">
-            <Link href="/dashboard" onClick={cerrar} className="btn-secondary justify-center py-2.5">
-              <LogIn className="h-4 w-4" /> Iniciar sesión
-            </Link>
-            <a href="#prueba" onClick={cerrar} className="btn-primary justify-center py-2.5">
-              Prueba gratis
+
+          <div className="mt-4 border-t border-slate-100 pt-4">
+            <a href="#prueba" onClick={cerrar} className="btn-secondary w-full justify-center py-2.5">
+              Probar gratis 6 días <ArrowRight className="h-4 w-4" />
             </a>
+            <p className="mt-2 text-center text-xs text-slate-500">Sin tarjeta de crédito · Sin permanencia</p>
           </div>
         </div>
       )}

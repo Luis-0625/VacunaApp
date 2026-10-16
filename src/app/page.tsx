@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
-  ArrowRight, BellRing, Building2, CalendarCheck, Check, ChevronDown, DatabaseBackup, Lock, LogIn, Mail, MapPin,
+  ArrowRight, BellRing, Building2, CalendarCheck, Check, ChevronDown, DatabaseBackup, Lock, Mail, MapPin,
   MessageCircle, PackageSearch, Phone, ShieldCheck, Syringe, TriangleAlert, UserRoundSearch, X,
 } from "lucide-react";
 import { temaMarca } from "@/lib/establecimiento";
@@ -12,6 +12,7 @@ import { CalculadoraROI } from "@/components/landing/CalculadoraROI";
 import { SolicitudPrueba } from "@/components/landing/SolicitudPrueba";
 import { ANCLAS } from "@/components/landing/anclas";
 import { MenuMovil } from "@/components/landing/MenuMovil";
+import { BotonAcceso } from "@/components/landing/AccesoCentro";
 import SelectorTema from "@/components/SelectorTema";
 
 export const metadata: Metadata = {
@@ -189,10 +190,10 @@ export default function LandingPage() {
 }
 
 const ENLACES_MENU = [
-  { href: "#funciones", texto: "Funciones" },
-  { href: "#demo", texto: "Demo" },
-  { href: "#precios", texto: "Precios" },
-  { href: "#faq", texto: "Preguntas" },
+  { href: "#funciones", texto: "Funciones", detalle: "Agenda, recordatorios, inventario y más" },
+  { href: "#demo", texto: "Demo", detalle: "Así lo vive tu paciente en WhatsApp" },
+  { href: "#precios", texto: "Precios", detalle: "Planes mensuales y anuales en pesos" },
+  { href: "#faq", texto: "Preguntas", detalle: "Datos, implementación y permanencia" },
 ];
 
 function Encabezado() {
@@ -212,12 +213,7 @@ function Encabezado() {
         </div>
         <div className="flex items-center gap-1 sm:gap-2">
           <SelectorTema compacto />
-          {/* En celular el login queda como ícono; el texto completo aparece desde sm */}
-          <Link href="/dashboard" aria-label="Iniciar sesión"
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 p-2 text-sm font-medium text-slate-700 transition hover:border-brand-300 hover:text-brand-700 sm:px-3.5">
-            <LogIn className="h-4 w-4" />
-            <span className="hidden sm:inline">Iniciar sesión</span>
-          </Link>
+          <BotonAcceso />
           <a href="#prueba" className="btn-primary hidden py-2 sm:inline-flex">
             Prueba gratis
           </a>
