@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
-  ArrowRight, BellRing, Building2, CalendarCheck, Check, ChevronDown, DatabaseBackup, Lock, Mail, MapPin,
+  ArrowRight, BellRing, Building2, CalendarCheck, Check, ChevronDown, DatabaseBackup, Lock, LogIn, Mail, MapPin,
   MessageCircle, PackageSearch, Phone, ShieldCheck, Syringe, TriangleAlert, UserRoundSearch, X,
 } from "lucide-react";
 import { temaMarca } from "@/lib/establecimiento";
@@ -11,6 +11,7 @@ import { DemoWhatsApp } from "@/components/landing/DemoWhatsApp";
 import { CalculadoraROI } from "@/components/landing/CalculadoraROI";
 import { SolicitudPrueba } from "@/components/landing/SolicitudPrueba";
 import { ANCLAS } from "@/components/landing/anclas";
+import { MenuMovil } from "@/components/landing/MenuMovil";
 import SelectorTema from "@/components/SelectorTema";
 
 export const metadata: Metadata = {
@@ -187,6 +188,13 @@ export default function LandingPage() {
   );
 }
 
+const ENLACES_MENU = [
+  { href: "#funciones", texto: "Funciones" },
+  { href: "#demo", texto: "Demo" },
+  { href: "#precios", texto: "Precios" },
+  { href: "#faq", texto: "Preguntas" },
+];
+
 function Encabezado() {
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200/70 bg-surface/80 backdrop-blur">
@@ -198,19 +206,22 @@ function Encabezado() {
           VacunaApp
         </Link>
         <div className="hidden items-center gap-7 text-sm text-slate-600 md:flex">
-          <a href="#funciones" className="hover:text-slate-900">Funciones</a>
-          <a href="#demo" className="hover:text-slate-900">Demo</a>
-          <a href="#precios" className="hover:text-slate-900">Precios</a>
-          <a href="#faq" className="hover:text-slate-900">Preguntas</a>
+          {ENLACES_MENU.map((e) => (
+            <a key={e.href} href={e.href} className="transition hover:text-brand-600">{e.texto}</a>
+          ))}
         </div>
         <div className="flex items-center gap-1 sm:gap-2">
           <SelectorTema compacto />
-          <Link href="/dashboard" className="hidden rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 sm:block">
-            Iniciar sesión
+          {/* En celular el login queda como ícono; el texto completo aparece desde sm */}
+          <Link href="/dashboard" aria-label="Iniciar sesión"
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 p-2 text-sm font-medium text-slate-700 transition hover:border-brand-300 hover:text-brand-700 sm:px-3.5">
+            <LogIn className="h-4 w-4" />
+            <span className="hidden sm:inline">Iniciar sesión</span>
           </Link>
-          <a href="#prueba" className="btn-primary py-2">
+          <a href="#prueba" className="btn-primary hidden py-2 sm:inline-flex">
             Prueba gratis
           </a>
+          <MenuMovil enlaces={ENLACES_MENU} />
         </div>
       </nav>
     </header>
