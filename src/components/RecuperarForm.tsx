@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, MailCheck, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import CampoContrasena from "@/components/CampoContrasena";
+import { marcarActividad } from "@/lib/actividad";
 
 const DIGITOS = 5; // mismo valor que en lib/recuperacion (ese archivo es solo de servidor)
 
@@ -87,6 +88,7 @@ export default function RecuperarForm({ emailInicial }: { emailInicial: string }
     // Contraseña guardada: entra directo con ella
     const { error } = await createClient().auth.signInWithPassword({ email, password });
     if (error) return router.replace("/login");
+    marcarActividad();
     router.replace("/dashboard");
     router.refresh();
   }

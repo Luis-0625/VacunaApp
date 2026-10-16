@@ -3,27 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Clock } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { LIMITE_INACTIVIDAD_MS as LIMITE_MS, leerActividad, marcarActividad } from "@/lib/actividad";
 
-const LIMITE_MS = 10 * 60 * 1000; // sin actividad durante 10 minutos se cierra la sesión
 const AVISO_MS = 60 * 1000; // el último minuto se muestra el aviso
-const CLAVE = "ultima-actividad"; // compartida entre pestañas: la actividad en una mantiene viva a las demás
 const EVENTOS = ["pointerdown", "keydown", "scroll", "touchstart", "mousemove"] as const;
-
-function leerUltima(): number {
-  try {
-    return Number(localStorage.getItem(CLAVE)) || Date.now();
-  } catch {
-    return Date.now();
-  }
-}
-
-function marcarActividad() {
-  try {
-    localStorage.setItem(CLAVE, String(Date.now()));
-  } catch {
-    // sin almacenamiento (modo privado): cada pestaña cuenta por su cuenta con la variable en memoria
-  }
-}
 
 /**
  * Cierra la sesión tras 10 minutos sin actividad, con un aviso el último minuto. Protege los datos de
@@ -36,6 +19,20 @@ export default function CierreInactividad() {
   const cerrando = useRef(false);
 
   useEffect(() => {
+    const cerrarSesion = async () => {
+      if (cerrando.current) return;
+      cerrando.current = true;
+      await createClient().auth.signOut().catch(() => {});
+      window.location.replace("/login?motivo=inactividad");
+    };
+
+    // Al abrir el panel (p. ej. tras cerrar la ventana): si la última actividad fue hace más del límite,
+    // la sesión se cierra en vez de reiniciar el contador
+    const previa = leerActividad();
+    if (previa && Date.now() - previa >= LIMITE_MS) {
+      cerrarSesion();
+      return;
+    }
     ultimaLocal.current = Date.now();
     marcarActividad();
     let ultimaEscritura = 0;
@@ -51,12 +48,9 @@ export default function CierreInactividad() {
     };
 
     const revisar = async () => {
-      const inactivo = Date.now() - Math.max(leerUltima(), ultimaLocal.current);
+      const inactivo = Date.now() - Math.max(leerActividad() ?? 0, ultimaLocal.current);
       if (inactivo >= LIMITE_MS) {
-        if (cerrando.current) return;
-        cerrando.current = true;
-        await createClient().auth.signOut().catch(() => {});
-        window.location.replace("/login?motivo=inactividad");
+        await cerrarSesion();
       } else if (inactivo >= LIMITE_MS - AVISO_MS) {
         avisando.current = true;
         setRestante(Math.ceil((LIMITE_MS - inactivo) / 1000));

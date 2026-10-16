@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import CampoContrasena from "@/components/CampoContrasena";
+import { marcarActividad } from "@/lib/actividad";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -23,6 +24,7 @@ export default function LoginForm() {
       setLoading(false);
       return;
     }
+    marcarActividad();
     router.replace("/dashboard");
     router.refresh();
   }
