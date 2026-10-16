@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import CierreInactividad from "@/components/CierreInactividad";
 import PlataformaManager, { type CentroResumen, type PagoPorConfirmar } from "@/components/PlataformaManager";
 import { esSuperadmin, getPerfil } from "@/lib/auth";
 import { addDaysISO, todayISO } from "@/lib/agenda";
@@ -45,5 +46,10 @@ export default async function PlataformaPage() {
   const nombres = new Map(centros.map((c) => [c.id, c.nombre]));
   const pagos: PagoPorConfirmar[] = (porConfirmar ?? []).map((p) => ({ ...p, centro: nombres.get(p.centro_id) ?? "Centro" }));
 
-  return <PlataformaManager centros={resumen} pagos={pagos} tieneCentro={!!perfil} hoy={todayISO()} />;
+  return (
+    <>
+      <CierreInactividad />
+      <PlataformaManager centros={resumen} pagos={pagos} tieneCentro={!!perfil} hoy={todayISO()} />
+    </>
+  );
 }

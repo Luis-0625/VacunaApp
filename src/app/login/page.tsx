@@ -1,4 +1,4 @@
-import { BellRing, CalendarCheck, MessageCircle, ShieldCheck } from "lucide-react";
+import { BellRing, CalendarCheck, Clock, MessageCircle, ShieldCheck } from "lucide-react";
 import LoginForm from "@/components/LoginForm";
 import SelectorTema from "@/components/SelectorTema";
 import { LogoEstablecimiento } from "@/components/ui";
@@ -12,8 +12,8 @@ const features = [
   { icon: MessageCircle, title: "Confirmación por WhatsApp", text: "El paciente confirma o reprograma solo" },
 ];
 
-export default async function LoginPage() {
-  const est = await getEstablecimientoActual();
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ motivo?: string }> }) {
+  const [est, { motivo }] = await Promise.all([getEstablecimientoActual(), searchParams]);
 
   return (
     <main className="grid min-h-screen bg-surface lg:grid-cols-[1fr_1.1fr]">
@@ -32,6 +32,11 @@ export default async function LoginPage() {
         <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-12">
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Iniciar sesión</h1>
           <p className="mb-8 mt-1.5 text-sm text-slate-500">Ingresa con tu cuenta del personal del centro.</p>
+          {motivo === "inactividad" && (
+            <p className="-mt-4 mb-6 flex gap-2 rounded-lg bg-amber-50 px-3 py-2.5 text-sm text-amber-800 ring-1 ring-amber-200">
+              <Clock size={16} className="mt-0.5 shrink-0" /> Tu sesión se cerró tras 10 minutos sin actividad. Ingresa de nuevo.
+            </p>
+          )}
           <LoginForm />
         </div>
 

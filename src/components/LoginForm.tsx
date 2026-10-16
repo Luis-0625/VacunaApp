@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import CampoContrasena from "@/components/CampoContrasena";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -32,11 +34,16 @@ export default function LoginForm() {
         <input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)}
           placeholder="nombre@centro.com" className="input" />
       </label>
-      <label className="block space-y-1.5">
-        <span className="text-sm font-medium text-slate-700">Contraseña</span>
-        <input type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)}
-          placeholder="••••••••" className="input" />
-      </label>
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between gap-3">
+          <label htmlFor="password" className="text-sm font-medium text-slate-700">Contraseña</label>
+          <Link href={`/recuperar${email ? `?email=${encodeURIComponent(email)}` : ""}`}
+            className="text-sm font-medium text-brand-600 hover:text-brand-700">
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </div>
+        <CampoContrasena id="password" value={password} onChange={setPassword} />
+      </div>
       {error && (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-red-200">{error}</p>
       )}

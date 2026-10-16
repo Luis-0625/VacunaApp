@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import CierreInactividad from "@/components/CierreInactividad";
 import SinAcceso from "@/components/SinAcceso";
 import ControlSuscripcion from "@/components/ControlSuscripcion";
 import { estadoSuscripcion } from "@/lib/suscripcion";
@@ -19,6 +20,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <div className="min-h-screen md:flex">
+      <CierreInactividad />
       <Sidebar nombre={perfil.nombre} rol={perfil.rol} superadmin={superadmin}
         establecimiento={{ nombre: est.nombre, ciudad: est.ciudad, logo_url: est.logo_url }}
         avisos={{ "/dashboard/inventario": alertas?.total ?? 0 }} />
