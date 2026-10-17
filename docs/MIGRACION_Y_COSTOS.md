@@ -207,15 +207,20 @@ Si el tiempo es lo más importante, quedarse en Supabase Pro + Vercel Pro (≈$4
 
 - **Webhook de Twilio (local):** `https://<tu-dominio-ngrok>/api/whatsapp/webhook`, método POST.
 - **Variables en `.env.local` para ngrok:** `APP_URL` y `TWILIO_WEBHOOK_URL` (con la misma URL de ngrok).
-- **Número de WhatsApp por centro:** si un centro tiene `whatsapp_from` guardado, ese número tiene prioridad sobre
+- **Números de WhatsApp (modelo actual):** los centros NO usan su línea propia ni verifican nada con Meta. Todos envían
+  desde el número compartido de la plataforma (`TWILIO_WHATSAPP_FROM`), registrado una sola vez por el dueño de VacunaApp
+  en Twilio/Meta; cada mensaje lleva el nombre del centro. Opcionalmente, el superadmin puede asignar a un centro un número
+  de Twilio dedicado (comprado en la cuenta de la plataforma); para eso se usa `whatsapp_from`. Un número que ya tiene
+  WhatsApp (personal o Business) no se puede registrar en Twilio sin darlo de baja antes de esa app.
+- **Campo `whatsapp_from`:** si un centro lo tiene guardado, ese número tiene prioridad sobre
   `TWILIO_WHATSAPP_FROM`. Si el número no está registrado en Twilio, el envío falla con
   "Twilio could not find a Channel with the specified From address". Desde el 15 de octubre de 2026 los dos centros
   tienen el campo vacío y usan el número de la plataforma (sandbox).
 - **Producción:** el sandbox de Twilio solo envía a números que se unieron con `join …` (caduca a las 72 horas) y que
   escribieron en las últimas 24 horas. Para pacientes reales hacen falta un número propio aprobado y plantillas aprobadas
   (`TWILIO_WHATSAPP_CONTENT_SID`, `TWILIO_CAMPANA_CONTENT_SID`, `TWILIO_CARNE_CONTENT_SID`). Hoy hay una plantilla por
-  tipo para toda la plataforma: si cada centro tiene su propia cuenta de Meta, la app tendría que guardar la plantilla de
-  cada centro.
+  tipo para toda la plataforma, y sirven para todos los centros porque el nombre del centro es una variable de la plantilla
+  ({{5}}/{{2}}).
 - **Estado de entrega:** solo funciona en producción (https). Twilio llama a `https://<dominio>/api/whatsapp/estado` con la
   firma `X-Twilio-Signature`; en local con ngrok, `APP_URL` debe ser la URL https de ngrok.
 - **Mercado Pago:** los links de pago están en `LINKS_PAGO` (`src/lib/suscripcion.ts`). Para el modo automático: crear

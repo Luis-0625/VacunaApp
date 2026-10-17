@@ -76,6 +76,12 @@ Los webhooks de Twilio necesitan una URL pública: ejecuta `ngrok http 3000` y u
 - **Mensajes entrantes:** `POST https://<tu-dominio>/api/whatsapp/webhook`
 - El estado de entrega (`/api/whatsapp/estado`) se registra solo al enviar cada mensaje.
 
+**Números de WhatsApp.** Los centros no necesitan número propio ni verificación de Meta: todos envían desde el número
+compartido de VacunaApp (`TWILIO_WHATSAPP_FROM`), que se registra una sola vez en Twilio/Meta, y cada mensaje lleva el
+nombre del centro. Si un centro necesita su propio remitente, el superadmin puede asignarle un número comprado en la
+cuenta de Twilio de la plataforma desde `/plataforma` (campo `whatsapp_from`). Un número que ya tiene WhatsApp no puede
+usarse en Twilio.
+
 El sandbox de Twilio solo entrega a quien escribió al número en las últimas 24 horas. Para pacientes reales hace falta
 un número aprobado y las plantillas aprobadas por Meta.
 

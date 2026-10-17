@@ -133,7 +133,7 @@ export default function PlataformaManager({ centros, pagos, tieneCentro, hoy }: 
                   </td>
                   <td className="td">
                     <button onClick={() => setWhatsapp(c)} className="inline-flex items-center gap-1.5 text-xs text-brand-700 hover:underline">
-                      <MessageCircle size={13} /> {c.whatsapp_from?.replace("whatsapp:", "") ?? "Número de la plataforma"}
+                      <MessageCircle size={13} /> {c.whatsapp_from?.replace("whatsapp:", "") ?? "Número compartido de VacunaApp"}
                     </button>
                   </td>
                   <td className="td">
@@ -356,11 +356,13 @@ function NumeroWhatsApp({ centro, onClose }: { centro: CentroResumen; onClose: (
     <Modal title={`WhatsApp · ${centro.nombre}`} onClose={() => onClose(false)}>
       <form onSubmit={guardar} className="space-y-4">
         <label className="block space-y-1.5">
-          <span className="text-sm font-medium text-slate-700">Número propio de WhatsApp (en Twilio)</span>
+          <span className="text-sm font-medium text-slate-700">Número de Twilio dedicado a este centro (opcional)</span>
           <input value={numero} onChange={(e) => setNumero(e.target.value)} className="input" placeholder="+573001234567" />
           <span className="block text-xs text-slate-500">
-            Déjalo vacío para usar el número de la plataforma. El número debe estar registrado en tu cuenta de Twilio
-            con el webhook de VacunaApp configurado.
+            Déjalo vacío para usar el número compartido de VacunaApp (recomendado): el centro no necesita cuenta ni
+            verificación de Meta, y sus pacientes lo identifican por el nombre que va en cada mensaje. Solo escribe un
+            número si lo compraste y registraste en TU cuenta de Twilio, con el webhook de VacunaApp configurado. No uses
+            la línea personal del centro: un número que ya está en WhatsApp no puede usarse en Twilio.
           </span>
         </label>
         {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-red-200">{error}</p>}

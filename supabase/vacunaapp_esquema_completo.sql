@@ -87,7 +87,7 @@ create table if not exists centros (
   color text not null default 'azul',
   dias_atencion int[] not null default '{1,2,3,4,5,6}',      -- 0 = domingo … 6 = sábado
   cupos_por_dia int not null default 0 check (cupos_por_dia >= 0), -- 0 = sin límite
-  whatsapp_from text,                     -- número propio de WhatsApp del centro (whatsapp:+57...); null = el de la plataforma
+  whatsapp_from text,                     -- número de Twilio dedicado al centro (whatsapp:+57...), asignado por la plataforma; null = el número compartido
   activo boolean not null default true,   -- false = suspendido: sus usuarios pierden el acceso
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()

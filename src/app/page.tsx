@@ -30,7 +30,7 @@ const ANTES_DESPUES = [
 ];
 
 const MODULOS = [
-  { icono: MessageCircle, titulo: "Notificaciones por WhatsApp y email", texto: "Mensajes oficiales con el logo, nombre y número de tu centro de vacunación." },
+  { icono: MessageCircle, titulo: "Notificaciones por WhatsApp y email", texto: "Mensajes con el nombre, la dirección y los datos de contacto de tu centro de vacunación." },
   { icono: CalendarCheck, titulo: "Semáforo de citas y agenda inteligente", texto: "Citas confirmadas, pendientes, reprogramadas y fallidas en un solo tablero." },
   { icono: UserRoundSearch, titulo: "Pacientes atrasados", texto: "Recaptura activa de esquemas de vacunación incompletos con campañas masivas." },
   { icono: PackageSearch, titulo: "Inventario trazable por lote", texto: "Lotes, fechas de vencimiento y descuento automático por cada dosis aplicada." },
@@ -41,7 +41,7 @@ const MODULOS = [
 const INTEGRACIONES = ["WhatsApp Business API", "Meta", "Twilio", "Resend", "Supabase"];
 
 const FAQ = [
-  { p: "¿Puedo usar mi propio número de WhatsApp?", r: "Sí. Vinculamos tu línea fija o móvil oficial a WhatsApp Business a través de Twilio, proveedor oficial de Meta, y tus pacientes ven el nombre de tu centro." },
+  { p: "¿Necesito verificar mi empresa con Meta o tener un número de WhatsApp propio?", r: "No. Enviamos los mensajes desde un número de WhatsApp de VacunaApp, a través de Twilio, proveedor oficial de Meta. Tu centro no hace ningún trámite con Meta: en cada mensaje tus pacientes ven el nombre, la dirección y el teléfono de tu centro, y sus respuestas llegan a tu panel." },
   { p: "¿Cumple con la normatividad de datos de salud en Colombia?", r: "Sí. Tratamos los datos conforme a la Ley 1581 de 2012: autorización registrada de cada paciente, opción de retirarla respondiendo SALIR, bases de datos cifradas y acceso restringido por centro y por rol." },
   { p: "¿Cuánto tarda la implementación?", r: "Dejamos la plataforma parametrizada, cargamos tus pacientes desde Excel y capacitamos a tu personal en 3 días hábiles." },
   { p: "¿Tengo contrato de permanencia?", r: "No. En el plan mensual puedes cancelar o cambiar de plan cuando quieras." },
@@ -170,7 +170,7 @@ export default function LandingPage() {
             <div>
               <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Empieza a recuperar pacientes esta semana</h2>
               <p className="mt-4 text-white/85">
-                Te acompañamos en la configuración, cargamos tus pacientes y conectamos tu WhatsApp. 6 días gratis, sin compromiso.
+                Te acompañamos en la configuración, cargamos tus pacientes y dejamos listos tus recordatorios por WhatsApp. 6 días gratis, sin compromiso.
               </p>
               <ul className="mt-6 space-y-2.5 text-sm">
                 {["Te contactamos en menos de un día hábil", "Sin tarjeta de crédito", "Configuración y capacitación incluidas"].map((t) => (
