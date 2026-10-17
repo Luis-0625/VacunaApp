@@ -105,7 +105,9 @@ npx tsc --noEmit  # revisión de tipos
 Las pruebas cubren: normalización de teléfonos, agenda y cupos, estado de la suscripción, validaciones de pacientes,
 vacunas y lotes, mensajes y campañas, el flujo de envío de recordatorios (con servicios externos simulados), y las piezas
 de seguridad (códigos de recuperación y firma del webhook de Mercado Pago). No tocan Supabase ni envían mensajes reales.
-Aún no hay pruebas de las rutas `/api` ni de las reglas RLS contra una base real.
+Aún no hay pruebas de las rutas `/api` ni de las reglas RLS contra una base real. Para probar el sistema completo a mano
+(carga desde Excel, vacunación, recordatorios por WhatsApp, auditoría, anonimización, roles, suscripción) con datos
+ficticios, sigue [`docs/GUIA_PRUEBA.md`](docs/GUIA_PRUEBA.md).
 
 ## Despliegue (Vercel)
 
