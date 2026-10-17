@@ -1,5 +1,6 @@
 import { NextResponse, after, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { limitarPorIp } from "@/lib/rate-limit";
 import { sendRecuperacionEmail } from "@/lib/notifications/email";
 import {
   EMAIL_RE, ESPERA_REENVIO_S, MAX_ENVIOS_HORA, VENCE_CODIGO_MIN, generarCodigo, hashSecreto, minutosDesdeAhora,
@@ -17,9 +18,12 @@ export async function POST(request: NextRequest) {
   const email = String(b?.email ?? "").trim().toLowerCase();
   if (!EMAIL_RE.test(email)) return NextResponse.json({ error: "Email inválido" }, { status: 400 });
 
+  const admin = createAdminClient();
+  const limitada = await limitarPorIp(admin, request.headers, "recuperar", 3600, 10);
+  if (limitada) return limitada;
+
   after(async () => {
     try {
-      const admin = createAdminClient();
       const { data: userId } = await admin.rpc("usuario_id_por_email", { p_email: email });
       if (!userId) return;
       // Atómico: máximo un código por minuto y MAX_ENVIOS_HORA por hora, para no llenar de correos a alguien

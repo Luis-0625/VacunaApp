@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { limitarPorIp } from "@/lib/rate-limit";
 import { DIGITOS, EMAIL_RE, MAX_INTENTOS, VENCE_TOKEN_MIN, generarToken, hashSecreto, minutosDesdeAhora, mismoHash } from "@/lib/recuperacion";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +17,8 @@ export async function POST(request: NextRequest) {
   }
 
   const admin = createAdminClient();
+  const limitada = await limitarPorIp(admin, request.headers, "recuperar-verificar", 900, 30);
+  if (limitada) return limitada;
   const { data: fila } = await admin.from("codigos_recuperacion").select("*").eq("email", email).maybeSingle();
   if (!fila?.codigo_hash || new Date(fila.vence) < new Date()) return NextResponse.json({ error: INVALIDO }, { status: 400 });
   // El intento se cuenta ANTES de comparar y de forma atómica en la base: aunque lleguen cientos de

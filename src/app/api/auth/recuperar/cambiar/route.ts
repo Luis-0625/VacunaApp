@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { limitarPorIp } from "@/lib/rate-limit";
 import { EMAIL_RE, hashSecreto, mismoHash } from "@/lib/recuperacion";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +15,8 @@ export async function POST(request: NextRequest) {
   if (password.length < 8) return NextResponse.json({ error: "La contraseña debe tener al menos 8 caracteres" }, { status: 400 });
 
   const admin = createAdminClient();
+  const limitada = await limitarPorIp(admin, request.headers, "recuperar-cambiar", 3600, 20);
+  if (limitada) return limitada;
   const { data: fila } = await admin.from("codigos_recuperacion").select("token_hash, token_vence").eq("email", email).maybeSingle();
   if (!fila?.token_vence || new Date(fila.token_vence) < new Date() || !mismoHash(fila.token_hash, hashSecreto(email, token))) {
     return NextResponse.json({ error: "La verificación venció. Pide un código nuevo.", vencido: true }, { status: 400 });

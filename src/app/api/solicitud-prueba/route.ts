@@ -4,6 +4,7 @@ import { sendSolicitudPruebaEmail, type SolicitudPrueba } from "@/lib/notificati
 import { enviarWhatsApp } from "@/lib/notifications/whatsapp";
 import { EMPRESA } from "@/lib/empresa";
 import { correosSuperadmins } from "@/lib/superadmins";
+import { limitarPorIp, permitir } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +37,17 @@ export async function POST(request: NextRequest) {
   // Campo trampa: los humanos no lo ven; si viene lleno es un bot. Se responde ok sin enviar nada.
   if (body && typeof body === "object" && (body as Record<string, unknown>).sitio) {
     return NextResponse.json({ ok: true });
+  }
+
+  // Cada solicitud cuesta un WhatsApp y un correo: 3 por hora por IP y 40 por hora en total
+  const db = createAdminClient();
+  const limitada = await limitarPorIp(db, request.headers, "solicitud-prueba", 3600, 3);
+  if (limitada) return limitada;
+  if (!(await permitir(db, "solicitud-prueba:global", 3600, 40))) {
+    return NextResponse.json(
+      { error: "Estamos recibiendo muchas solicitudes. Inténtalo de nuevo en un rato o escríbenos por WhatsApp." },
+      { status: 429 }
+    );
   }
 
   const parsed = parse(body);

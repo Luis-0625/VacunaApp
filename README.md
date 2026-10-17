@@ -44,7 +44,9 @@ Ejecuta en el **Editor SQL** de Supabase, en este orden:
    para una base nueva o para actualizar una existente sin perder datos. Haz un respaldo antes.
 2. `supabase/recuperacion.sql`: tabla y funciones de la recuperación de contraseña. También es idempotente; **se debe
    volver a ejecutar cada vez que cambie** (agrega, por ejemplo, el conteo atómico de intentos).
-3. `supabase/seed.sql` (opcional): datos de demostración. No lo uses en producción.
+3. `supabase/rate_limit.sql`: contador del límite de peticiones (formulario de prueba y recuperación de contraseña), sin
+   servicios externos. Idempotente. Si no se ejecuta, el límite queda desactivado pero la app sigue funcionando.
+4. `supabase/seed.sql` (opcional): datos de demostración. No lo uses en producción.
 
 Los demás `.sql` de la carpeta son los archivos históricos que el esquema completo reemplaza.
 
@@ -127,6 +129,8 @@ Aún no hay pruebas de las rutas `/api` ni de las reglas RLS contra una base rea
 - Los webhooks de Twilio se validan por firma; el cron, por `CRON_SECRET`; los pagos se consultan siempre a Mercado Pago.
 - Recuperación de contraseña: código de 6 dígitos, 5 intentos contados de forma atómica en la base, máximo 5 códigos por
   hora por correo, respuesta que no delata qué correos tienen cuenta, y cierre de las sesiones abiertas al cambiar la clave.
+- Límite de peticiones por IP (la IP se guarda con hash): solicitud de prueba 3 por hora, recuperación de contraseña 10
+  códigos por hora. El inicio de sesión lo limita Supabase Auth.
 - Cabeceras de seguridad (CSP, `X-Frame-Options`, etc.) en `next.config.mjs`.
 - Los mensajes respetan la autorización del paciente (Ley 1581 de 2012) y toda campaña incluye cómo darse de baja.
 
