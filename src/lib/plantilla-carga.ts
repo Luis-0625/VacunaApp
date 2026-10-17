@@ -1,75 +1,80 @@
 import * as XLSX from "xlsx";
 
-/** Hojas de la plantilla de carga inicial, en el orden en que se cargan. */
+/**
+ * Definición de las hojas de la plantilla de carga inicial. La usan el generador del Excel (servidor,
+ * plantilla-excel.ts) y el lector (navegador, leerLibro): los encabezados deben coincidir con los alias
+ * de lib/importacion.ts, que ignora mayúsculas, tildes y espacios.
+ */
+export interface Columna {
+  titulo: string;
+  /** Obligatoria: encabezado azul. Opcional: encabezado gris. */
+  req: boolean;
+  /** Nota que aparece al pasar el mouse sobre el encabezado. */
+  nota: string;
+  /** Valor de la fila de ejemplo. */
+  ejemplo: string;
+  ancho: number;
+}
+
+export const PREFIJO_EJEMPLO = "Ej:";
+
 export const HOJAS = [
   {
-    clave: "vacunas", nombre: "Vacunas", ruta: "/api/importar",
-    columnas: ["nombre", "dosis_totales", "intervalo_dias", "descripcion", "stock_minimo"],
-    aliases: ["vacunas"],
+    clave: "vacunas", nombre: "1. Vacunas", ruta: "/api/importar", color: "2563EB",
+    aliases: ["vacunas", "1_vacunas"],
+    columnas: [
+      { titulo: "Vacuna", req: true, ancho: 30, ejemplo: `${PREFIJO_EJEMPLO} Hepatitis B`, nota: "Nombre de la vacuna, como lo usa el centro. Escríbalo igual en las demás hojas." },
+      { titulo: "Dosis totales", req: true, ancho: 16, ejemplo: "3", nota: "Cuántas dosis tiene el esquema completo. Escriba 1 si es dosis única (por ejemplo, influenza)." },
+      { titulo: "Intervalo en días", req: false, ancho: 18, ejemplo: "30", nota: "Días entre una dosis y la siguiente. Obligatorio si la vacuna tiene más de una dosis. Con esto se calculan las próximas citas." },
+      { titulo: "Descripción", req: false, ancho: 34, ejemplo: "Esquema 0-1-6 meses", nota: "Opcional. Una nota para el equipo." },
+      { titulo: "Existencias mínimas", req: false, ancho: 20, ejemplo: "10", nota: "Opcional. El sistema avisa cuando queden menos dosis que este número. Deje vacío o 0 si no quiere alerta." },
+    ],
   },
   {
-    clave: "pacientes", nombre: "Pacientes", ruta: "/api/pacientes/importar",
-    columnas: ["nombre_completo", "documento_identidad", "telefono", "email", "fecha_nacimiento", "autoriza_mensajes"],
-    aliases: ["pacientes"],
+    clave: "pacientes", nombre: "2. Pacientes", ruta: "/api/pacientes/importar", color: "0D9488",
+    aliases: ["pacientes", "2_pacientes"],
+    columnas: [
+      { titulo: "Nombre completo", req: true, ancho: 30, ejemplo: `${PREFIJO_EJEMPLO} María Pérez Gómez`, nota: "Nombres y apellidos del paciente." },
+      { titulo: "Documento de identidad", req: true, ancho: 24, ejemplo: "1023456789", nota: "Solo números, sin puntos. Es lo que identifica al paciente: no puede repetirse." },
+      { titulo: "Teléfono", req: true, ancho: 18, ejemplo: "3001234567", nota: "Celular con WhatsApp. Sirve con o sin +57." },
+      { titulo: "Correo electrónico", req: false, ancho: 28, ejemplo: "maria@correo.com", nota: "Opcional. Para enviar recordatorios por correo." },
+      { titulo: "Fecha de nacimiento", req: false, ancho: 22, ejemplo: "15/03/1990", nota: "Opcional. Día/mes/año, por ejemplo 15/03/1990." },
+      { titulo: "Autoriza mensajes", req: false, ancho: 20, ejemplo: "SI", nota: "SI solo si el paciente autorizó recibir mensajes (Ley 1581 de 2012). NO si no lo autorizó: nunca recibirá recordatorios. Vacío = sin registrar." },
+    ],
   },
   {
-    clave: "dosis", nombre: "Dosis aplicadas", ruta: "/api/importar",
-    columnas: ["documento_identidad", "vacuna", "numero_dosis", "fecha_aplicacion", "fecha_proxima_dosis"],
-    aliases: ["dosis_aplicadas", "dosis", "vacunacion", "historial"],
+    clave: "dosis", nombre: "3. Dosis aplicadas", ruta: "/api/importar", color: "7C3AED",
+    aliases: ["dosis_aplicadas", "3_dosis_aplicadas", "dosis", "vacunacion", "historial"],
+    columnas: [
+      { titulo: "Documento de identidad", req: true, ancho: 24, ejemplo: `${PREFIJO_EJEMPLO} 1023456789`, nota: "El mismo documento que puso en la hoja Pacientes." },
+      { titulo: "Vacuna", req: true, ancho: 28, ejemplo: "Hepatitis B", nota: "Elija de la lista: son las vacunas de la hoja 1." },
+      { titulo: "Fecha de aplicación", req: true, ancho: 22, ejemplo: "15/09/2026", nota: "Día en que se aplicó la dosis. Día/mes/año. No puede ser una fecha futura." },
+      { titulo: "Número de dosis", req: false, ancho: 18, ejemplo: "1", nota: "Opcional. Si lo deja vacío, el sistema numera 1, 2, 3… según la fecha de aplicación." },
+      { titulo: "Fecha próxima dosis", req: false, ancho: 22, ejemplo: "15/10/2026", nota: "Opcional. Si la deja vacía se calcula con el intervalo de la vacuna. La última dosis del esquema no lleva próxima." },
+    ],
   },
   {
-    clave: "lotes", nombre: "Inventario actual", ruta: "/api/importar",
-    columnas: ["vacuna", "numero_lote", "laboratorio", "fecha_vencimiento", "existencias", "costo_unitario"],
-    aliases: ["inventario_actual", "inventario", "lotes"],
+    clave: "lotes", nombre: "4. Inventario actual", ruta: "/api/importar", color: "D97706",
+    aliases: ["inventario_actual", "4_inventario_actual", "inventario", "lotes"],
+    columnas: [
+      { titulo: "Vacuna", req: true, ancho: 28, ejemplo: `${PREFIJO_EJEMPLO} Hepatitis B`, nota: "Elija de la lista: son las vacunas de la hoja 1." },
+      { titulo: "Número de lote", req: true, ancho: 20, ejemplo: "HB2026-041", nota: "Como aparece en el frasco o la caja." },
+      { titulo: "Fecha de vencimiento", req: true, ancho: 22, ejemplo: "30/06/2027", nota: "Día/mes/año." },
+      { titulo: "Existencias actuales", req: true, ancho: 22, ejemplo: "42", nota: "Dosis que hay HOY en la nevera de este lote (contadas), no las que llegaron en total." },
+      { titulo: "Laboratorio", req: false, ancho: 22, ejemplo: "Sinovac", nota: "Opcional." },
+      { titulo: "Costo por dosis", req: false, ancho: 18, ejemplo: "18500", nota: "Opcional. En pesos, sin puntos ni símbolos." },
+    ],
   },
 ] as const;
 
 export type ClaveHoja = (typeof HOJAS)[number]["clave"];
 
-const INSTRUCCIONES: string[][] = [
-  ["PLANTILLA DE CARGA INICIAL · VacunaApp"],
-  [""],
-  ["Llene las hojas en este orden. No cambie los nombres de las hojas ni los encabezados (primera fila). Puede dejar vacía una hoja que no necesite."],
-  [""],
-  ["1. Vacunas: el catálogo del centro."],
-  ["   nombre (obligatorio) · dosis_totales: dosis del esquema (1 si es dosis única) · intervalo_dias: días entre una dosis y la siguiente (obligatorio si tiene más de una dosis)"],
-  ["   descripcion (opcional) · stock_minimo: avisar cuando queden menos de estas dosis (0 = sin alerta)"],
-  [""],
-  ["2. Pacientes: las personas vacunadas en el periodo que se quiere cargar (por ejemplo, el último mes o los últimos dos meses)."],
-  ["   nombre_completo, documento_identidad y telefono son obligatorios. El teléfono puede ir con o sin +57. email y fecha_nacimiento son opcionales."],
-  ["   autoriza_mensajes: escriba SI solo si el paciente autorizó recibir mensajes (Ley 1581 de 2012); NO si no lo autorizó; déjelo vacío si no se sabe."],
-  ["   Quien tenga NO nunca recibe recordatorios."],
-  [""],
-  ["3. Dosis aplicadas: una fila por cada dosis que ya se aplicó."],
-  ["   documento_identidad (el mismo de la hoja Pacientes) · vacuna (el mismo nombre de la hoja Vacunas) · fecha_aplicacion (AAAA-MM-DD o DD/MM/AAAA)"],
-  ["   numero_dosis (opcional): si lo deja vacío se asigna 1, 2, 3… según la fecha de aplicación."],
-  ["   fecha_proxima_dosis (opcional): si la deja vacía se calcula con el intervalo de la vacuna. La última dosis del esquema no lleva próxima."],
-  ["   Con esta información el sistema programa los recordatorios de las dosis que vienen y muestra como atrasados a quienes ya debieron volver."],
-  ["   Estas dosis NO descuentan del inventario."],
-  [""],
-  ["4. Inventario actual: las dosis que hay HOY en la nevera, por lote. Se llena junto con el administrador del centro, contando físicamente."],
-  ["   vacuna · numero_lote · fecha_vencimiento · existencias (dosis disponibles hoy, no las recibidas) · laboratorio y costo_unitario son opcionales."],
-  [""],
-  ["Si el archivo se carga dos veces no se duplica nada: lo que ya existe se omite. Las filas con errores se muestran con su número de fila para corregirlas y volver a cargar."],
-];
+const normHoja = (s: string) => s.trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[\s-.]+/g, "_");
 
-/** Descarga la plantilla en blanco (instrucciones + una hoja por tipo de dato, solo con encabezados). */
-export function descargarPlantilla() {
-  const wb = XLSX.utils.book_new();
-  const instr = XLSX.utils.aoa_to_sheet(INSTRUCCIONES);
-  instr["!cols"] = [{ wch: 150 }];
-  XLSX.utils.book_append_sheet(wb, instr, "Instrucciones");
-  for (const h of HOJAS) {
-    const ws = XLSX.utils.aoa_to_sheet([[...h.columnas]]);
-    ws["!cols"] = h.columnas.map((c) => ({ wch: Math.max(c.length + 4, 18) }));
-    XLSX.utils.book_append_sheet(wb, ws, h.nombre);
-  }
-  XLSX.writeFile(wb, "plantilla-carga-inicial-vacunaapp.xlsx");
-}
-
-const normHoja = (s: string) => s.trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[\s-]+/g, "_");
-
-/** Lee el libro y devuelve las filas de cada hoja reconocida (las vacías se omiten). */
+/**
+ * Lee el libro y devuelve las filas de cada hoja reconocida. Se saltan las filas vacías y la de ejemplo; cada
+ * fila conserva su número real de la hoja en `__fila` para que los errores apunten a la fila correcta del Excel.
+ */
 export function leerLibro(data: ArrayBuffer): Partial<Record<ClaveHoja, Record<string, unknown>[]>> {
   // Sin cellDates: las fechas llegan como número de serie de Excel, que el servidor convierte sin desfases de zona horaria
   const wb = XLSX.read(data, { type: "array" });
@@ -77,8 +82,13 @@ export function leerLibro(data: ArrayBuffer): Partial<Record<ClaveHoja, Record<s
   for (const nombre of wb.SheetNames) {
     const hoja = HOJAS.find((h) => (h.aliases as readonly string[]).includes(normHoja(nombre)));
     if (!hoja) continue;
-    const filas = XLSX.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets[nombre], { defval: "", raw: true })
-      .filter((f) => Object.values(f).some((v) => v !== "" && v != null));
+    const filas = XLSX.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets[nombre], { defval: "", raw: true, blankrows: true })
+      .map((f, i): Record<string, unknown> => ({ ...f, __fila: i + 2 }))
+      .filter((f) => {
+        const valores = Object.entries(f).filter(([k, v]) => k !== "__fila" && v !== "" && v != null).map(([, v]) => v);
+        if (valores.length === 0) return false;
+        return !String(valores[0]).trim().toLowerCase().startsWith(PREFIJO_EJEMPLO.toLowerCase());
+      });
     if (filas.length) salida[hoja.clave] = filas;
   }
   return salida;

@@ -28,6 +28,9 @@ export function pick(row: Fila, aliases: string[]): unknown {
   return undefined;
 }
 
+/** Número de fila en el Excel: lo trae la fila (__fila) o, si no, su posición + encabezado. */
+export const filaDe = (row: Fila, i: number) => (typeof row.__fila === "number" ? row.__fila : i + 2);
+
 /** AAAA-MM-DD, DD/MM/AAAA o serial de Excel -> AAAA-MM-DD. null = vacío; "invalid" = no se entiende. */
 export function toISODate(v: unknown): string | null | "invalid" {
   if (v === undefined || v === null || v === "") return null;
@@ -61,12 +64,12 @@ export const ALIAS = {
   vacuna: {
     nombre: ["nombre", "vacuna", "nombre_vacuna"],
     dosis: ["dosis_totales", "dosis", "numero_de_dosis", "total_dosis"],
-    intervalo: ["intervalo_dias", "intervalo_dias_recom_dosis", "intervalo", "dias_entre_dosis"],
+    intervalo: ["intervalo_en_dias", "intervalo_dias", "intervalo_dias_recom_dosis", "intervalo", "dias_entre_dosis"],
     descripcion: ["descripcion", "observaciones", "notas"],
-    minimo: ["stock_minimo", "existencias_minimas", "minimo"],
+    minimo: ["stock_minimo", "existencias_minimas", "existencias_minimas", "minimo"],
   },
   dosis: {
-    documento: ["documento_identidad", "documento", "cedula", "cc", "identificacion"],
+    documento: ["documento_identidad", "documento_de_identidad", "documento", "cedula", "cc", "identificacion"],
     vacuna: ["vacuna", "nombre_vacuna"],
     numero: ["numero_dosis", "dosis", "n_dosis", "numero_de_dosis"],
     fecha: ["fecha_aplicacion", "fecha", "fecha_de_aplicacion"],
@@ -74,9 +77,9 @@ export const ALIAS = {
   },
   lote: {
     vacuna: ["vacuna", "nombre_vacuna"],
-    numero: ["numero_lote", "lote"],
+    numero: ["numero_lote", "numero_de_lote", "lote"],
     laboratorio: ["laboratorio", "fabricante"],
-    vence: ["fecha_vencimiento", "vencimiento", "vence"],
+    vence: ["fecha_vencimiento", "fecha_de_vencimiento", "vencimiento", "vence"],
     existencias: ["existencias", "cantidad", "dosis_disponibles", "existencias_actuales", "stock"],
     costo: ["costo_unitario", "costo", "costo_por_dosis"],
   },
@@ -92,7 +95,7 @@ export function planificarVacunas(rows: Fila[], existentes: Set<string>) {
   let omitidas = 0;
 
   rows.forEach((row, i) => {
-    const fila = i + 2;
+    const fila = filaDe(row, i);
     const a = ALIAS.vacuna;
     const nombre = String(pick(row, a.nombre) ?? "").trim();
     const r = parseVacuna({
@@ -138,7 +141,7 @@ export function planificarDosis(
   const grupos = new Map<string, Parsed[]>();
 
   rows.forEach((row, i) => {
-    const fila = i + 2;
+    const fila = filaDe(row, i);
     const doc = String(pick(row, a.documento) ?? "").trim();
     const nombreVacuna = String(pick(row, a.vacuna) ?? "").trim();
     const fail = (motivo: string) => void errores.push({ fila, referencia: doc || undefined, motivo });
@@ -218,7 +221,7 @@ export function planificarLotes(rows: Fila[], ctx: { vacunas: Map<string, Vacuna
   const a = ALIAS.lote;
 
   rows.forEach((row, i) => {
-    const fila = i + 2;
+    const fila = filaDe(row, i);
     const nombreVacuna = String(pick(row, a.vacuna) ?? "").trim();
     const numero = String(pick(row, a.numero) ?? "").trim();
     const fail = (motivo: string) => void errores.push({ fila, referencia: numero || undefined, motivo });

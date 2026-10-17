@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Download, FileSpreadsheet, Loader2, TriangleAlert, XCircle } from "lucide-react";
-import { HOJAS, descargarPlantilla, leerLibro, type ClaveHoja } from "@/lib/plantilla-carga";
+import { HOJAS, leerLibro, type ClaveHoja } from "@/lib/plantilla-carga";
 
 interface Resultado {
   total: number;
@@ -81,10 +81,10 @@ export default function CargaInicial() {
       <section className="card space-y-3 p-5">
         <h2 className="font-semibold">1. Descarga la plantilla y entrégala al centro</h2>
         <p className="text-sm text-slate-600">
-          Trae las instrucciones y una hoja para cada dato: <strong>Vacunas</strong>, <strong>Pacientes</strong>,{" "}
-          <strong>Dosis aplicadas</strong> e <strong>Inventario actual</strong>.
+          Es un Excel con una hoja de instrucciones y cuatro hojas de colores, con listas desplegables y notas en cada columna:{" "}
+          <strong>1. Vacunas</strong>, <strong>2. Pacientes</strong>, <strong>3. Dosis aplicadas</strong> y <strong>4. Inventario actual</strong>.
         </p>
-        <button onClick={descargarPlantilla} className="btn-secondary"><Download size={16} /> Descargar plantilla (.xlsx)</button>
+        <a href="/api/importar/plantilla" download className="btn-secondary inline-flex"><Download size={16} /> Descargar plantilla (.xlsx)</a>
         <p className="flex gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 ring-1 ring-amber-200">
           <TriangleAlert size={14} className="mt-0.5 shrink-0" />
           <span>

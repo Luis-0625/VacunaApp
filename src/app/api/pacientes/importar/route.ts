@@ -11,7 +11,7 @@ interface RowError { fila: number; documento?: string; motivo: string }
 
 const ALIASES: Record<string, string[]> = {
   nombre_completo: ["nombre_completo", "nombre", "nombres", "paciente", "name"],
-  documento_identidad: ["documento_identidad", "documento", "cedula", "cc", "identificacion", "id"],
+  documento_identidad: ["documento_identidad", "documento_de_identidad", "documento", "cedula", "cc", "identificacion", "id"],
   email: ["email", "correo", "correo_electronico", "mail"],
   telefono: ["telefono", "celular", "movil", "phone", "whatsapp"],
   fecha_nacimiento: ["fecha_nacimiento", "nacimiento", "fecha_de_nacimiento", "birthdate"],
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
   const validos = new Map<string, Record<string, unknown>>();
 
   rows.forEach((row, i) => {
-    const fila = i + 2; // +1 encabezado, +1 base 1
+    const fila = typeof row.__fila === "number" ? row.__fila : i + 2; // fila real del Excel (+1 encabezado, +1 base 1)
     const nombre = String(pick(row, "nombre_completo") ?? "").trim();
     const doc = String(pick(row, "documento_identidad") ?? "").trim();
     const emailRaw = String(pick(row, "email") ?? "").trim().toLowerCase();
