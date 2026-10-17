@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import CampoContrasena from "@/components/CampoContrasena";
 import { marcarActividad } from "@/lib/actividad";
 
-const DIGITOS = 5; // mismo valor que en lib/recuperacion (ese archivo es solo de servidor)
+const DIGITOS = 6; // mismo valor que en lib/recuperacion (ese archivo es solo de servidor)
 
 type Paso = "correo" | "codigo" | "clave";
 
@@ -18,7 +18,7 @@ const PASOS: { id: Paso; texto: string }[] = [
   { id: "clave", texto: "Nueva contraseña" },
 ];
 
-/** Recuperación en tres pasos: pedir el código de 5 dígitos, confirmarlo y solo entonces cambiar la contraseña. */
+/** Recuperación en tres pasos: pedir el código de 6 dígitos, confirmarlo y solo entonces cambiar la contraseña. */
 export default function RecuperarForm({ emailInicial }: { emailInicial: string }) {
   const router = useRouter();
   const [paso, setPaso] = useState<Paso>("correo");

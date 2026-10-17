@@ -24,3 +24,49 @@ revoke all on function usuario_id_por_email(text) from public, anon, authenticat
 grant execute on function usuario_id_por_email(text) to service_role;
 
 notify pgrst, 'reload schema';
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- Endurecimiento anti fuerza bruta. Todo atómico: no depende de leer y luego escribir desde la app.
+-- ---------------------------------------------------------------------------------------------------------------
+alter table codigos_recuperacion add column if not exists envios int not null default 0;
+alter table codigos_recuperacion add column if not exists ventana timestamptz;
+
+-- Suma 1 intento y devuelve el total. Solo cuenta si hay un código vigente por verificar.
+create or replace function recuperacion_contar_intento(p_email text) returns int
+language sql security definer set search_path = public as $$
+  update codigos_recuperacion set intentos = intentos + 1
+  where email = p_email and codigo_hash is not null
+  returning intentos;
+$$;
+
+-- Reserva un envío si pasó la espera mínima y no se superó el máximo por hora. Devuelve si se puede enviar.
+create or replace function recuperacion_reservar_envio(p_email text, p_espera_s int, p_max_hora int) returns boolean
+language plpgsql security definer set search_path = public as $$
+declare ok boolean;
+begin
+  insert into codigos_recuperacion as c (email, vence, envios, ventana, created_at)
+  values (p_email, now(), 1, now(), now())
+  on conflict (email) do update set
+    envios = case when c.ventana is null or c.ventana < now() - interval '1 hour' then 1 else c.envios + 1 end,
+    ventana = case when c.ventana is null or c.ventana < now() - interval '1 hour' then now() else c.ventana end,
+    created_at = now()
+  where c.created_at < now() - make_interval(secs => p_espera_s)
+    and (c.ventana is null or c.ventana < now() - interval '1 hour' or c.envios < p_max_hora)
+  returning true into ok;
+  return coalesce(ok, false);
+end $$;
+
+-- Cierra todas las sesiones de un usuario (sus refresh tokens se borran en cascada).
+create or replace function cerrar_sesiones_usuario(p_user_id uuid) returns void
+language sql security definer set search_path = public, auth as $$
+  delete from auth.sessions where user_id = p_user_id;
+$$;
+
+revoke all on function recuperacion_contar_intento(text) from public, anon, authenticated;
+revoke all on function recuperacion_reservar_envio(text, int, int) from public, anon, authenticated;
+revoke all on function cerrar_sesiones_usuario(uuid) from public, anon, authenticated;
+grant execute on function recuperacion_contar_intento(text) to service_role;
+grant execute on function recuperacion_reservar_envio(text, int, int) to service_role;
+grant execute on function cerrar_sesiones_usuario(uuid) to service_role;
+
+notify pgrst, 'reload schema';

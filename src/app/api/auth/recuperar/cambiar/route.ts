@@ -25,5 +25,8 @@ export async function POST(request: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
   await admin.from("codigos_recuperacion").delete().eq("email", email); // token de un solo uso
+  // Cierra las sesiones abiertas: quien tuviera acceso con la contraseña vieja lo pierde.
+  const { error: sErr } = await admin.rpc("cerrar_sesiones_usuario", { p_user_id: userId });
+  if (sErr) console.error("auth/recuperar/cambiar: no se cerraron las sesiones", sErr.message);
   return NextResponse.json({ ok: true });
 }

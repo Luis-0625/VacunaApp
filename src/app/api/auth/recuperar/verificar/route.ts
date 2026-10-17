@@ -18,13 +18,16 @@ export async function POST(request: NextRequest) {
   const admin = createAdminClient();
   const { data: fila } = await admin.from("codigos_recuperacion").select("*").eq("email", email).maybeSingle();
   if (!fila?.codigo_hash || new Date(fila.vence) < new Date()) return NextResponse.json({ error: INVALIDO }, { status: 400 });
-  if (fila.intentos >= MAX_INTENTOS) {
+  // El intento se cuenta ANTES de comparar y de forma atómica en la base: aunque lleguen cientos de
+  // peticiones en paralelo, solo MAX_INTENTOS llegan a comparar el código.
+  const { data: intentos } = await admin.rpc("recuperacion_contar_intento", { p_email: email });
+  if (typeof intentos !== "number" || intentos > MAX_INTENTOS) {
     return NextResponse.json({ error: "Superaste los intentos permitidos. Pide un código nuevo." }, { status: 429 });
   }
 
   if (!mismoHash(fila.codigo_hash, hashSecreto(email, codigo))) {
-    const intentos = fila.intentos + 1;
-    await admin.from("codigos_recuperacion").update({ intentos }).eq("email", email);
+    // Con el último intento fallido el código muere: ya no sirve ni el correcto.
+    if (intentos >= MAX_INTENTOS) await admin.from("codigos_recuperacion").update({ codigo_hash: null }).eq("email", email);
     const quedan = MAX_INTENTOS - intentos;
     return NextResponse.json({
       error: quedan > 0
