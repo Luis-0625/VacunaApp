@@ -51,7 +51,9 @@ Ejecuta en el **Editor SQL** de Supabase, en este orden:
 4. `supabase/auditoria.sql`: registro automático (con triggers) de quién crea, modifica o elimina vacunaciones, pacientes y
    vacunas (pantalla **Auditoría**), y la función de **anonimización de pacientes** (Ley 1581). Idempotente; vuelve a
    ejecutarlo cuando cambie.
-5. `supabase/seed.sql` (opcional): datos de demostración. No lo uses en producción.
+5. `supabase/carga_historica.sql`: permite cargar desde Excel dosis ya aplicadas (histórico) sin lote y sin descontar del
+   inventario, aunque la vacuna ya lleve lotes. Idempotente.
+6. `supabase/seed.sql` (opcional): datos de demostración. No lo uses en producción.
 
 Los demás `.sql` de la carpeta son los archivos históricos que el esquema completo reemplaza.
 

@@ -24,6 +24,7 @@ Tiempo estimado: 1 hora y media. Las partes 6 y 7 (mensajes) se pueden hacer otr
    | 2 | `recuperacion.sql` | Recuperar contraseña |
    | 3 | `rate_limit.sql` | Límite de peticiones |
    | 4 | `auditoria.sql` | Auditoría y anonimización de pacientes |
+   | 5 | `carga_historica.sql` | Cargar desde Excel dosis ya aplicadas aunque la vacuna ya tenga lotes en el inventario |
 
    ✅ Cada uno termina con **Success**, sin errores en rojo.
 3. **Authentication → Sign In / Providers →** desactiva **Allow new users to sign up**.
@@ -138,7 +139,12 @@ La última fila usa un documento que no existe, **a propósito**.
 - **Recordatorios:** hay uno **pendiente** para Prueba Uno (dosis de mañana).
 - **Reportes / Resumen:** muestran las dosis cargadas.
 
-> Las dosis históricas **no descuentan** el inventario: Hepatitis B sigue en 20.
+> Las dosis históricas **no descuentan** el inventario: Hepatitis B sigue en 20. Esto funciona aunque la vacuna ya tenga
+> lotes, siempre que hayas ejecutado `carga_historica.sql`. Si no, esas dosis fallan con "lleva inventario: selecciona el
+> lote" y el mensaje te lo recuerda.
+
+> **¿Ya cargaste el archivo antes de ejecutar `carga_historica.sql`?** Ejecútalo y vuelve a subir el **mismo Excel**: lo que ya
+> estaba cargado se omite y solo se cargan las dosis que habían fallado.
 
 ---
 

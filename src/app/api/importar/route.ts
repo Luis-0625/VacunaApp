@@ -5,7 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { todayISO } from "@/lib/agenda";
 import {
   ALIAS, normNombre, pick, planificarDosis, planificarLotes, planificarVacunas,
-  type CitaExistente, type ErrorFila, type Fila, type VacunaRef,
+  type CitaExistente, type DosisPlan, type ErrorFila, type Fila, type VacunaRef,
 } from "@/lib/importacion";
 
 export const dynamic = "force-dynamic";
@@ -94,19 +94,50 @@ async function cargarDosis(db: SupabaseClient, centroId: string, userId: string,
   const errores = [...plan.errores];
   let importados = 0;
 
-  const base = (d: (typeof plan.insertar)[number]) => ({
+  // Dosis históricas: se registran sin lote y sin descontar inventario (supabase/carga_historica.sql), aunque la
+  // vacuna ya lleve inventario. Si esa función aún no existe en la base, se usa el insert normal, que sí exige lote.
+  let funcionDisponible = true;
+  const porFuncion = (filas: DosisPlan[]) => db.rpc("importar_dosis_historicas", {
+    p_centro: centroId, p_usuario: userId,
+    p_filas: filas.map((d) => ({
+      paciente_id: d.paciente_id, vacuna_id: d.vacuna_id, numero_dosis: d.numero_dosis,
+      fecha_aplicacion: d.fecha_aplicacion, fecha_proxima_dosis: d.fecha_proxima_dosis,
+    })),
+  });
+  const insertDirecto = (d: DosisPlan) => ({
     centro_id: centroId, paciente_id: d.paciente_id, vacuna_id: d.vacuna_id, numero_dosis: d.numero_dosis,
     fecha_aplicacion: d.fecha_aplicacion, fecha_proxima_dosis: d.fecha_proxima_dosis,
     estado: "COMPLETADA", aplicada_por: userId, externa: false,
   });
+  const noExiste = (e: { code?: string }) => e.code === "PGRST202" || e.code === "42883";
+
   for (const parte of trozos(plan.insertar, LOTE)) {
-    const { error } = await db.from("citas_vacunacion").insert(parte.map(base));
+    if (funcionDisponible) {
+      const { data, error } = await porFuncion(parte);
+      if (!error) { importados += Number(data ?? 0); continue; }
+      if (noExiste(error)) funcionDisponible = false;
+      else {
+        // Una regla de la base rechazó el lote completo: se aísla la fila culpable
+        for (const d of parte) {
+          const { data: n, error: e } = await porFuncion([d]);
+          if (e) errores.push({ fila: d.fila, motivo: e.message });
+          else importados += Number(n ?? 0);
+        }
+        continue;
+      }
+    }
+    // Sin la función: insert normal, que exige lote si la vacuna lleva inventario
+    const { error } = await db.from("citas_vacunacion").insert(parte.map(insertDirecto));
     if (!error) { importados += parte.length; continue; }
-    // Una regla de la base (p. ej. la vacuna ya lleva inventario) rechazó el lote: se aísla la fila culpable
     for (const d of parte) {
-      const { error: e } = await db.from("citas_vacunacion").insert(base(d));
-      if (e) errores.push({ fila: d.fila, motivo: e.message });
-      else importados++;
+      const { error: e } = await db.from("citas_vacunacion").insert(insertDirecto(d));
+      if (e) {
+        const lleva = /lleva inventario|No hay dosis disponibles/.test(e.message);
+        errores.push({
+          fila: d.fila,
+          motivo: lleva ? `${e.message}. Ejecuta supabase/carga_historica.sql en Supabase para cargar dosis históricas.` : e.message,
+        });
+      } else importados++;
     }
   }
 

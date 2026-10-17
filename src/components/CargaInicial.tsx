@@ -89,8 +89,7 @@ export default function CargaInicial() {
           <TriangleAlert size={14} className="mt-0.5 shrink-0" />
           <span>
             Las dosis ya aplicadas <strong>no descuentan del inventario</strong>. El inventario se carga con lo que hay hoy en la
-            nevera, contado junto con el administrador del centro. Si una vacuna ya tiene lotes, no se pueden cargar dosis
-            históricas de esa vacuna: cárgalas antes de los lotes.
+            nevera, contado junto con el administrador del centro. Esto aplica aunque la vacuna ya tenga lotes en el inventario.
           </span>
         </p>
       </section>

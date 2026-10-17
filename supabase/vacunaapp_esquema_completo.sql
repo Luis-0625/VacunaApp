@@ -485,6 +485,12 @@ begin
     return new;
   end if;
 
+  -- Carga histórica desde Excel: dosis aplicadas antes de llevar el inventario en el sistema. No exigen lote ni
+  -- descuentan existencias. Solo la activa importar_dosis_historicas (supabase/carga_historica.sql), con la llave de servicio.
+  if new.lote_id is null and auth.uid() is null and current_setting('app.carga_historica', true) = '1' then
+    return new;
+  end if;
+
   -- Dosis aplicada en otro lugar: no sale del inventario del centro
   if new.externa then
     new.lote_id := null;
