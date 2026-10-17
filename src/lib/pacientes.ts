@@ -60,4 +60,7 @@ export function parsePaciente(
   };
 }
 
+/** Los pacientes anonimizados quedan con documento ANON-<id> (ver anonimizar_paciente en supabase/auditoria.sql). */
+export const PREFIJO_ANONIMO = "ANON-";
+
 export const DUPLICATE_MSG = "Ya existe un paciente con ese documento";

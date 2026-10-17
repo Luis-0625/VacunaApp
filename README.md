@@ -23,6 +23,7 @@ recordatorios por WhatsApp y correo, campañas para pacientes atrasados y carné
 | `/dashboard/recordatorios`, `atrasados` | Monitor de envíos y campañas de pacientes atrasados | ADMIN, VACUNADOR |
 | `/dashboard/vacunas`, `inventario`, `reportes` | Catálogo, lotes y existencias, reportes | según módulo |
 | `/dashboard/establecimiento`, `usuarios`, `suscripcion` | Datos del centro, equipo y plan | ADMIN |
+| `/dashboard/pacientes` (anonimizar) | Botón del ojo tachado: borra la identidad de un paciente y conserva sus dosis (derecho de supresión) | ADMIN |
 | `/dashboard/auditoria` | Quién creó, modificó o eliminó vacunaciones, pacientes y vacunas (solo lectura, con filtros) | ADMIN |
 | `/dashboard/carga-inicial` | Carga inicial desde una plantilla de Excel: vacunas, pacientes, dosis ya aplicadas e inventario actual | ADMIN |
 | `/plataforma` | Alta y suspensión de centros, confirmación de pagos | superadministrador |
@@ -48,7 +49,8 @@ Ejecuta en el **Editor SQL** de Supabase, en este orden:
 3. `supabase/rate_limit.sql`: contador del límite de peticiones (formulario de prueba y recuperación de contraseña), sin
    servicios externos. Idempotente. Si no se ejecuta, el límite queda desactivado pero la app sigue funcionando.
 4. `supabase/auditoria.sql`: registro automático (con triggers) de quién crea, modifica o elimina vacunaciones, pacientes y
-   vacunas, y la pantalla **Auditoría**. Idempotente.
+   vacunas (pantalla **Auditoría**), y la función de **anonimización de pacientes** (Ley 1581). Idempotente; vuelve a
+   ejecutarlo cuando cambie.
 5. `supabase/seed.sql` (opcional): datos de demostración. No lo uses en producción.
 
 Los demás `.sql` de la carpeta son los archivos históricos que el esquema completo reemplaza.
@@ -132,6 +134,9 @@ Aún no hay pruebas de las rutas `/api` ni de las reglas RLS contra una base rea
 - Los webhooks de Twilio se validan por firma; el cron, por `CRON_SECRET`; los pagos se consultan siempre a Mercado Pago.
 - Recuperación de contraseña: código de 6 dígitos, 5 intentos contados de forma atómica en la base, máximo 5 códigos por
   hora por correo, respuesta que no delata qué correos tienen cuenta, y cierre de las sesiones abiertas al cambiar la clave.
+- Derecho de supresión (Ley 1581): **anonimizar** un paciente borra nombre, documento, teléfono, correo y fecha de nacimiento
+  (también en mensajes de campañas y en la auditoría), renueva su enlace del carné y conserva las dosis aplicadas sin
+  identidad, porque el historial de vacunación debe conservarse. Eliminar un paciente sigue disponible para errores y duplicados.
 - Límite de peticiones por IP (la IP se guarda con hash): solicitud de prueba 3 por hora, recuperación de contraseña 10
   códigos por hora. El inicio de sesión lo limita Supabase Auth.
 - Cabeceras de seguridad (CSP, `X-Frame-Options`, etc.) en `next.config.mjs`.

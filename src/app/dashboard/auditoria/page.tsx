@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bot, ChevronRight, Plus, Pencil, Trash2 } from "lucide-react";
+import { Bot, ChevronRight, EyeOff, Plus, Pencil, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requirePerfilPage } from "@/lib/auth";
 import { PageHeader } from "@/components/ui";
@@ -10,11 +10,12 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const ICONO = { CREAR: Plus, MODIFICAR: Pencil, ELIMINAR: Trash2 } as const;
+const ICONO = { CREAR: Plus, MODIFICAR: Pencil, ELIMINAR: Trash2, ANONIMIZAR: EyeOff } as const;
 const COLOR = {
   CREAR: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
   MODIFICAR: "bg-amber-50 text-amber-700 ring-amber-600/20",
   ELIMINAR: "bg-red-50 text-red-700 ring-red-600/20",
+  ANONIMIZAR: "bg-violet-50 text-violet-700 ring-violet-600/20",
 } as const;
 
 export default async function AuditoriaPage(props: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
@@ -131,6 +132,7 @@ export default async function AuditoriaPage(props: { searchParams: Promise<Recor
                     </summary>
                     <div className="space-y-2 bg-slate-50 px-5 py-4">
                       <p className="text-xs tabular-nums text-slate-500 sm:hidden">{fechaHora(r.created_at)}</p>
+                      {filas.length === 0 && <p className="text-sm text-slate-500">Sin detalle de campos: por privacidad no se conservan los datos personales de este registro.</p>}
                       <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                           <thead>

@@ -6,6 +6,7 @@ import { fetchAll } from "@/lib/fetch-all";
 import { getEstablecimientoActual } from "@/lib/establecimiento-server";
 import { createClient } from "@/lib/supabase/server";
 import type { DosisPendiente } from "@/lib/campanas";
+import { PREFIJO_ANONIMO } from "@/lib/pacientes";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Atrasados" };
@@ -18,6 +19,7 @@ export default async function AtrasadosPage() {
   const [atrasados, campanas, est] = await Promise.all([
     fetchAll<DosisPendiente>((f, t) =>
       db.from("dosis_pendientes").select("*").lt("fecha_proxima_dosis", hoy)
+        .not("documento_identidad", "like", `${PREFIJO_ANONIMO}%`) // pacientes anonimizados
         .order("fecha_proxima_dosis").order("cita_id").range(f, t).returns<DosisPendiente[]>()
     ).catch(() => null),
     db.from("campanas").select("id, nombre, created_at").order("created_at", { ascending: false }).limit(10),

@@ -20,6 +20,8 @@ export interface Paciente {
   autorizacion_medio: MedioAutorizacion | null;
   /** Enlace secreto del carné digital: /carne/<carne_token>. */
   carne_token: string;
+  /** Fecha en que se anonimizó (derecho de supresión). null = paciente con datos personales. */
+  anonimizado_at?: string | null;
 }
 
 export interface Vacuna {

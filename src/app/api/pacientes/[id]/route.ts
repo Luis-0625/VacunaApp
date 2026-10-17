@@ -16,6 +16,11 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
   const parsed = parsePaciente(await request.json().catch(() => null));
   if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 });
 
+  const { data: actual } = await db.from("pacientes").select("anonimizado_at").eq("id", params.id).maybeSingle();
+  if (actual?.anonimizado_at) {
+    return NextResponse.json({ error: "Este paciente fue anonimizado y ya no se puede editar" }, { status: 409 });
+  }
+
   const { data, error } = await db
     .from("pacientes").update(parsed.data).eq("id", params.id).select().maybeSingle();
   if (error) {

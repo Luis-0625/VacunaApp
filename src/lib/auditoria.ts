@@ -5,7 +5,7 @@ export interface RegistroAuditoria {
   created_at: string;
   tabla: "citas_vacunacion" | "pacientes" | "vacunas";
   registro_id: string | null;
-  accion: "CREAR" | "MODIFICAR" | "ELIMINAR";
+  accion: "CREAR" | "MODIFICAR" | "ELIMINAR" | "ANONIMIZAR";
   paciente_id: string | null;
   usuario_id: string | null;
   usuario_nombre: string | null;
@@ -25,6 +25,7 @@ export const ACCIONES: { valor: RegistroAuditoria["accion"]; etiqueta: string }[
   { valor: "CREAR", etiqueta: "Creó" },
   { valor: "MODIFICAR", etiqueta: "Modificó" },
   { valor: "ELIMINAR", etiqueta: "Eliminó" },
+  { valor: "ANONIMIZAR", etiqueta: "Anonimizó" },
 ];
 
 export const etiquetaTabla = (t: string) => TABLAS.find((x) => x.valor === t)?.etiqueta ?? t;
@@ -50,6 +51,7 @@ const CAMPOS: Record<string, string> = {
   autorizacion_fecha: "Fecha de autorización",
   autorizacion_medio: "Medio de autorización",
   carne_token: "Enlace del carné",
+  anonimizado_at: "Anonimizado el",
   nombre: "Nombre",
   dosis_totales: "Dosis totales",
   intervalo_dias_recom_dosis: "Intervalo entre dosis (días)",

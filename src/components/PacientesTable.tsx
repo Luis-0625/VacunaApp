@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Download, FileSpreadsheet, FileText, IdCard, Mail, Pencil, Phone, Plus, Search, Trash2, Upload } from "lucide-react";
+import { Download, EyeOff, FileSpreadsheet, FileText, IdCard, Mail, Pencil, Phone, Plus, Search, Trash2, Upload } from "lucide-react";
 import Modal from "@/components/Modal";
 import type { Paciente } from "@/types/db";
 import ImportarExcel from "@/components/ImportarExcel";
@@ -23,6 +23,9 @@ export default function PacientesTable({ pacientes, esAdmin }: { pacientes: Paci
   const [carne, setCarne] = useState<Paciente | null>(null);
   const [deleting, setDeleting] = useState<Paciente | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [anonimizando, setAnonimizando] = useState<Paciente | null>(null);
+  const [confirmaTexto, setConfirmaTexto] = useState("");
+  const [anonError, setAnonError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const filtered = useMemo(() => {
@@ -45,6 +48,17 @@ export default function PacientesTable({ pacientes, esAdmin }: { pacientes: Paci
     setBusy(false);
     if (!res.ok) return setDeleteError((await res.json()).error ?? "No se pudo eliminar");
     setDeleting(null);
+    router.refresh();
+  }
+
+  async function confirmAnonimizar() {
+    if (!anonimizando) return;
+    setBusy(true);
+    setAnonError(null);
+    const res = await fetch(`/api/pacientes/${anonimizando.id}/anonimizar`, { method: "POST" });
+    setBusy(false);
+    if (!res.ok) return setAnonError((await res.json().catch(() => ({}))).error ?? "No se pudo anonimizar");
+    setAnonimizando(null);
     router.refresh();
   }
 
@@ -121,7 +135,12 @@ export default function PacientesTable({ pacientes, esAdmin }: { pacientes: Paci
                   <td className="td">
                     <div className="flex items-center gap-3">
                       <Avatar name={p.nombre_completo} />
-                      <span className="font-medium">{p.nombre_completo}</span>
+                      <span className={"font-medium" + (p.anonimizado_at ? " text-slate-400" : "")}>{p.nombre_completo}</span>
+                      {p.anonimizado_at && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 text-xs font-medium text-violet-700 ring-1 ring-inset ring-violet-600/20">
+                          <EyeOff size={11} /> Anonimizado
+                        </span>
+                      )}
                     </div>
                   </td>
                   <td className="td tabular-nums text-slate-600">{p.documento_identidad}</td>
@@ -133,10 +152,16 @@ export default function PacientesTable({ pacientes, esAdmin }: { pacientes: Paci
                   <td className="td text-slate-600">{p.fecha_nacimiento ?? "—"}</td>
                   <td className="td">
                     <div className="flex justify-end gap-1">
+                      {!p.anonimizado_at && (<>
                       <button onClick={() => setCarne(p)} aria-label="Carné digital" title="Carné digital"
                         className="rounded-lg p-2 text-slate-500 hover:bg-brand-50 hover:text-brand-700"><IdCard size={16} /></button>
                       <button onClick={() => setEditing(p)} aria-label="Editar" title="Editar"
                         className="rounded-lg p-2 text-slate-500 hover:bg-brand-50 hover:text-brand-700"><Pencil size={16} /></button>
+                      </>)}
+                      {esAdmin && !p.anonimizado_at && (
+                      <button onClick={() => { setAnonError(null); setConfirmaTexto(""); setAnonimizando(p); }} aria-label="Anonimizar" title="Anonimizar (borrar la identidad, conservar las dosis)"
+                        className="rounded-lg p-2 text-slate-500 hover:bg-violet-50 hover:text-violet-700"><EyeOff size={16} /></button>
+                      )}
                       {esAdmin && (
                       <button onClick={() => { setDeleteError(null); setDeleting(p); }} aria-label="Eliminar" title="Eliminar"
                         className="rounded-lg p-2 text-slate-500 hover:bg-red-50 hover:text-red-600"><Trash2 size={16} /></button>
@@ -183,10 +208,38 @@ export default function PacientesTable({ pacientes, esAdmin }: { pacientes: Paci
         </Modal>
       )}
 
+      {anonimizando && (
+        <Modal title="Anonimizar paciente" onClose={() => setAnonimizando(null)}>
+          <div className="space-y-3 text-sm text-slate-600">
+            <p>
+              Vas a borrar la identidad de <strong>{anonimizando.nombre_completo}</strong>. Úsalo cuando el paciente pida que se
+              eliminen sus datos (Ley 1581 de 2012).
+            </p>
+            <ul className="list-disc space-y-1 pl-5">
+              <li><strong>Se borra:</strong> nombre, documento, teléfono, correo y fecha de nacimiento, también en los mensajes y en la auditoría. Su enlace del carné deja de funcionar y no recibirá más recordatorios.</li>
+              <li><strong>Se conserva:</strong> las dosis aplicadas, sin nombre, porque el historial de vacunación debe conservarse. Quedan constancia de quién anonimizó y cuándo.</li>
+            </ul>
+            <p className="rounded-lg bg-red-50 px-3 py-2 font-medium text-red-700 ring-1 ring-red-200">Esta acción no se puede deshacer.</p>
+            <label className="block space-y-1.5">
+              <span className="font-medium text-slate-700">Escribe ANONIMIZAR para confirmar</span>
+              <input value={confirmaTexto} onChange={(e) => setConfirmaTexto(e.target.value)} className="input" autoComplete="off" />
+            </label>
+          </div>
+          {anonError && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{anonError}</p>}
+          <div className="mt-5 flex justify-end gap-2">
+            <button onClick={() => setAnonimizando(null)} className="btn-secondary">Cancelar</button>
+            <button onClick={confirmAnonimizar} disabled={busy || confirmaTexto.trim().toUpperCase() !== "ANONIMIZAR"}
+              className="rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50">
+              {busy ? "Anonimizando…" : "Anonimizar"}
+            </button>
+          </div>
+        </Modal>
+      )}
+
       {deleting && (
         <Modal title="Eliminar paciente" onClose={() => setDeleting(null)}>
           <p className="text-sm text-slate-600">
-            ¿Eliminar a <strong>{deleting.nombre_completo}</strong>? También se borrarán sus citas y recordatorios. Esta acción no se puede deshacer.
+            ¿Eliminar a <strong>{deleting.nombre_completo}</strong>? También se borrarán sus citas y recordatorios. Esta acción no se puede deshacer. Si el paciente pidió que se eliminen sus datos, usa mejor <strong>Anonimizar</strong>: conserva el historial de vacunación sin identidad.
           </p>
           {deleteError && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{deleteError}</p>}
           <div className="mt-5 flex justify-end gap-2">
