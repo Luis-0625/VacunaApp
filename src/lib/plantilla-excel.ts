@@ -3,12 +3,13 @@ import { HOJAS } from "@/lib/plantilla-carga";
 
 /**
  * Genera la plantilla de carga inicial: una hoja de inicio con los pasos, y una hoja por dato con encabezados de
- * color (azul = obligatorio, gris = opcional), una fila de ejemplo, notas en cada columna, listas desplegables y
+ * color (color fuerte = obligatorio, tono claro = opcional), una fila de ejemplo, notas en cada columna, listas desplegables y
  * formato de fecha. SOLO servidor (exceljs es pesado). Los encabezados deben seguir coincidiendo con plantilla-carga.ts.
  */
 
 const FILAS_CON_FORMATO = 2000; // filas de datos con validación y formato listos
-const GRIS = "FFD1D5DB";
+const PIZARRA = "FF1E293B"; // texto y banner
+const LINEA = "FFE2E8F0";
 const sol = (argb: string) => ({ type: "pattern", pattern: "solid", fgColor: { argb } }) as const;
 const borde = (argb: string) => ({ style: "thin", color: { argb } }) as const;
 
@@ -40,13 +41,13 @@ function hojaInicio(wb: ExcelJS.Workbook) {
   ws.mergeCells("B2:H2");
   Object.assign(ws.getCell("B2"), { value: "Plantilla de carga inicial" });
   ws.getCell("B2").font = { name: "Calibri", size: 24, bold: true, color: { argb: "FFFFFFFF" } };
-  ws.getCell("B2").fill = sol("FF2563EB");
+  ws.getCell("B2").fill = sol(PIZARRA);
   ws.getCell("B2").alignment = { vertical: "middle", indent: 1 };
   fila(2, 48);
   ws.mergeCells("B3:H3");
   ws.getCell("B3").value = "VacunaApp · Dejamos su sistema listo con los pacientes vacunados en los últimos 1 o 2 meses";
-  ws.getCell("B3").font = { name: "Calibri", size: 12, color: { argb: "FF1E3A8A" } };
-  ws.getCell("B3").fill = sol("FFDBEAFE");
+  ws.getCell("B3").font = { name: "Calibri", size: 12, color: { argb: "FF475569" } };
+  ws.getCell("B3").fill = sol("FFF1F5F9");
   ws.getCell("B3").alignment = { vertical: "middle", indent: 1 };
   fila(3, 30);
 
@@ -69,16 +70,16 @@ function hojaInicio(wb: ExcelJS.Workbook) {
     const t = ws.getCell(`C${r}`);
     t.value = { richText: [{ font: { name: "Calibri", size: 12, bold: true, color: { argb: `FF${h.color}` } }, text: negrita }, { font: { name: "Calibri", size: 12 }, text: resto }] };
     t.alignment = { vertical: "middle", wrapText: true, indent: 1 };
-    t.border = { bottom: borde("FFE5E7EB") };
+    t.border = { bottom: borde(LINEA) };
     fila(r, alto(negrita + resto, 40));
   });
 
   // Cómo leer las hojas
   titulo(ws, 11, "Cómo leer cada hoja");
   const leyenda: [string, string, string, string, boolean][] = [
-    ["Azul", "FF2563EB", "FFFFFFFF", "Columna obligatoria (el color cambia según la hoja).", true],
-    ["Gris", GRIS, "FF374151", "Columna opcional: puede dejarla vacía.", true],
-    ["Ej: …", "FFF3F4F6", "FF9CA3AF", "Fila de ejemplo, en gris y cursiva. Puede borrarla o escribir encima; el sistema la ignora.", false],
+    ["Color fuerte", "FF3B6EA5", "FFFFFFFF", "Columna obligatoria: debe llenarla (cada hoja tiene su propio color).", true],
+    ["Color claro", "FFE6EEF6", "FF3B6EA5", "Columna opcional: puede dejarla vacía.", true],
+    ["Ej: …", "FFF8FAFC", "FF94A3B8", "Fila de ejemplo, en gris y cursiva. Puede borrarla o escribir encima; el sistema la ignora.", false],
   ];
   leyenda.forEach(([etiqueta, fondo, texto, descr, negrita], i) => {
     const r = 12 + i;
@@ -97,7 +98,7 @@ function hojaInicio(wb: ExcelJS.Workbook) {
   });
   ws.mergeCells("B15:H15");
   ws.getCell("B15").value = "Tip: pase el mouse sobre el encabezado de cada columna para ver qué debe escribir.";
-  ws.getCell("B15").font = { name: "Calibri", size: 11, italic: true, color: { argb: "FF4B5563" } };
+  ws.getCell("B15").font = { name: "Calibri", size: 11, italic: true, color: { argb: "FF64748B" } };
   ws.getCell("B15").alignment = { vertical: "middle", indent: 0 };
   fila(15, 26);
 
@@ -116,8 +117,9 @@ function hojaInicio(wb: ExcelJS.Workbook) {
     ws.mergeCells(`B${r}:H${r}`);
     const c = ws.getCell(`B${r}`);
     c.value = `•  ${a}`;
-    c.font = { name: "Calibri", size: 11, color: { argb: "FF78350F" } };
-    c.fill = sol("FFFEF3C7");
+    c.font = { name: "Calibri", size: 11, color: { argb: "FF6B4E16" } };
+    c.fill = sol("FFFDF6E3");
+    c.border = { left: { style: "thick", color: { argb: "FFD9A441" } }, bottom: borde("FFF6E7C1") };
     c.alignment = { vertical: "middle", wrapText: true, indent: 1 };
     fila(r, Math.max(24, Math.ceil((a.length + 4) / (ANCHO_TEXTO + 24)) * 19 + 6));
   });
@@ -127,8 +129,9 @@ function titulo(ws: ExcelJS.Worksheet, r: number, texto: string) {
   ws.mergeCells(`B${r}:H${r}`);
   const c = ws.getCell(`B${r}`);
   c.value = texto;
-  c.font = { name: "Calibri", size: 15, bold: true, color: { argb: "FF111827" } };
+  c.font = { name: "Calibri", size: 15, bold: true, color: { argb: PIZARRA } };
   c.alignment = { vertical: "middle" };
+  c.border = { bottom: borde(LINEA) };
   ws.getRow(r).height = 32;
 }
 
@@ -148,10 +151,10 @@ function hojaDatos(wb: ExcelJS.Workbook, h: Hoja) {
   h.columnas.forEach((c, i) => {
     const cell = cab.getCell(i + 1);
     cell.value = c.titulo;
-    cell.fill = sol(c.req ? `FF${h.color}` : GRIS);
-    cell.font = { name: "Calibri", size: 12, bold: true, color: { argb: c.req ? "FFFFFFFF" : "FF374151" } };
+    cell.fill = sol(c.req ? `FF${h.color}` : `FF${h.tinte}`);
+    cell.font = { name: "Calibri", size: 12, bold: true, color: { argb: c.req ? "FFFFFFFF" : `FF${h.color}` } };
     cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
-    cell.border = { left: borde("FFFFFFFF"), right: borde("FFFFFFFF") };
+    cell.border = { left: borde("FFFFFFFF"), right: borde("FFFFFFFF"), bottom: { style: "medium", color: { argb: `FF${h.color}` } } };
     cell.note = { texts: [{ font: { name: "Calibri", size: 10, bold: true }, text: `${c.req ? "Obligatoria" : "Opcional"}\n` }, { font: { name: "Calibri", size: 10 }, text: c.nota }], margins: { insetmode: "custom", inset: [0.1, 0.1, 0.1, 0.1] } };
   });
 
@@ -161,8 +164,9 @@ function hojaDatos(wb: ExcelJS.Workbook, h: Hoja) {
   h.columnas.forEach((c, i) => {
     const cell = ej.getCell(i + 1);
     cell.value = c.ejemplo;
-    cell.font = { name: "Calibri", size: 11, italic: true, color: { argb: "FF9CA3AF" } };
-    cell.fill = sol("FFF3F4F6");
+    cell.font = { name: "Calibri", size: 11, italic: true, color: { argb: "FF94A3B8" } };
+    cell.fill = sol("FFF8FAFC");
+    cell.border = { bottom: borde(LINEA) };
     cell.alignment = { vertical: "middle", horizontal: c.titulo === "Vacuna" ? "left" : undefined };
   });
 

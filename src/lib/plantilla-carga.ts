@@ -7,7 +7,7 @@ import * as XLSX from "xlsx";
  */
 export interface Columna {
   titulo: string;
-  /** Obligatoria: encabezado azul. Opcional: encabezado gris. */
+  /** Obligatoria: encabezado en el color fuerte de la hoja. Opcional: en su tono claro. */
   req: boolean;
   /** Nota que aparece al pasar el mouse sobre el encabezado. */
   nota: string;
@@ -20,7 +20,7 @@ export const PREFIJO_EJEMPLO = "Ej:";
 
 export const HOJAS = [
   {
-    clave: "vacunas", nombre: "1. Vacunas", ruta: "/api/importar", color: "2563EB",
+    clave: "vacunas", nombre: "1. Vacunas", ruta: "/api/importar", color: "3B6EA5", tinte: "E6EEF6",
     aliases: ["vacunas", "1_vacunas"],
     columnas: [
       { titulo: "Vacuna", req: true, ancho: 30, ejemplo: `${PREFIJO_EJEMPLO} Hepatitis B`, nota: "Nombre de la vacuna, como lo usa el centro. Escríbalo igual en las demás hojas." },
@@ -31,7 +31,7 @@ export const HOJAS = [
     ],
   },
   {
-    clave: "pacientes", nombre: "2. Pacientes", ruta: "/api/pacientes/importar", color: "0D9488",
+    clave: "pacientes", nombre: "2. Pacientes", ruta: "/api/pacientes/importar", color: "2F7F76", tinte: "E2F1EE",
     aliases: ["pacientes", "2_pacientes"],
     columnas: [
       { titulo: "Nombre completo", req: true, ancho: 30, ejemplo: `${PREFIJO_EJEMPLO} María Pérez Gómez`, nota: "Nombres y apellidos del paciente." },
@@ -43,7 +43,7 @@ export const HOJAS = [
     ],
   },
   {
-    clave: "dosis", nombre: "3. Dosis aplicadas", ruta: "/api/importar", color: "7C3AED",
+    clave: "dosis", nombre: "3. Dosis aplicadas", ruta: "/api/importar", color: "6B5B9E", tinte: "ECE9F5",
     aliases: ["dosis_aplicadas", "3_dosis_aplicadas", "dosis", "vacunacion", "historial"],
     columnas: [
       { titulo: "Documento de identidad", req: true, ancho: 24, ejemplo: `${PREFIJO_EJEMPLO} 1023456789`, nota: "El mismo documento que puso en la hoja Pacientes." },
@@ -54,7 +54,7 @@ export const HOJAS = [
     ],
   },
   {
-    clave: "lotes", nombre: "4. Inventario actual", ruta: "/api/importar", color: "D97706",
+    clave: "lotes", nombre: "4. Inventario actual", ruta: "/api/importar", color: "A0691C", tinte: "F8EEDB",
     aliases: ["inventario_actual", "4_inventario_actual", "inventario", "lotes"],
     columnas: [
       { titulo: "Vacuna", req: true, ancho: 28, ejemplo: `${PREFIJO_EJEMPLO} Hepatitis B`, nota: "Elija de la lista: son las vacunas de la hoja 1." },
