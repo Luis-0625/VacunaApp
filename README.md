@@ -23,6 +23,7 @@ recordatorios por WhatsApp y correo, campañas para pacientes atrasados y carné
 | `/dashboard/recordatorios`, `atrasados` | Monitor de envíos y campañas de pacientes atrasados | ADMIN, VACUNADOR |
 | `/dashboard/vacunas`, `inventario`, `reportes` | Catálogo, lotes y existencias, reportes | según módulo |
 | `/dashboard/establecimiento`, `usuarios`, `suscripcion` | Datos del centro, equipo y plan | ADMIN |
+| `/dashboard/carga-inicial` | Carga inicial desde una plantilla de Excel: vacunas, pacientes, dosis ya aplicadas e inventario actual | ADMIN |
 | `/plataforma` | Alta y suspensión de centros, confirmación de pagos | superadministrador |
 
 ## Puesta en marcha en local
