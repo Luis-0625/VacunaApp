@@ -23,6 +23,7 @@ recordatorios por WhatsApp y correo, campañas para pacientes atrasados y carné
 | `/dashboard/recordatorios`, `atrasados` | Monitor de envíos y campañas de pacientes atrasados | ADMIN, VACUNADOR |
 | `/dashboard/vacunas`, `inventario`, `reportes` | Catálogo, lotes y existencias, reportes | según módulo |
 | `/dashboard/establecimiento`, `usuarios`, `suscripcion` | Datos del centro, equipo y plan | ADMIN |
+| `/dashboard/auditoria` | Quién creó, modificó o eliminó vacunaciones, pacientes y vacunas (solo lectura, con filtros) | ADMIN |
 | `/dashboard/carga-inicial` | Carga inicial desde una plantilla de Excel: vacunas, pacientes, dosis ya aplicadas e inventario actual | ADMIN |
 | `/plataforma` | Alta y suspensión de centros, confirmación de pagos | superadministrador |
 
@@ -46,7 +47,9 @@ Ejecuta en el **Editor SQL** de Supabase, en este orden:
    volver a ejecutar cada vez que cambie** (agrega, por ejemplo, el conteo atómico de intentos).
 3. `supabase/rate_limit.sql`: contador del límite de peticiones (formulario de prueba y recuperación de contraseña), sin
    servicios externos. Idempotente. Si no se ejecuta, el límite queda desactivado pero la app sigue funcionando.
-4. `supabase/seed.sql` (opcional): datos de demostración. No lo uses en producción.
+4. `supabase/auditoria.sql`: registro automático (con triggers) de quién crea, modifica o elimina vacunaciones, pacientes y
+   vacunas, y la pantalla **Auditoría**. Idempotente.
+5. `supabase/seed.sql` (opcional): datos de demostración. No lo uses en producción.
 
 Los demás `.sql` de la carpeta son los archivos históricos que el esquema completo reemplaza.
 

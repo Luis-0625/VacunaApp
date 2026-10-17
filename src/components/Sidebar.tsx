@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  BarChart3, BellRing, Building2, CalendarDays, CreditCard, FileSpreadsheet, Globe, Megaphone, Package, ChevronsLeft, ChevronsRight, LayoutDashboard, LogOut, Menu, Pill, Syringe, UserCog, Users, X,
+  BarChart3, BellRing, Building2, CalendarDays, CreditCard, FileSpreadsheet, Globe, History, Megaphone, Package, ChevronsLeft, ChevronsRight, LayoutDashboard, LogOut, Menu, Pill, Syringe, UserCog, Users, X,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Avatar, LogoEstablecimiento } from "@/components/ui";
@@ -33,6 +33,7 @@ const SECCIONES: { titulo: string; items: Item[] }[] = [
       { href: "/dashboard/vacunas", label: "Vacunas", icon: Pill, roles: ["ADMIN"] },
       { href: "/dashboard/reportes", label: "Reportes", icon: BarChart3, roles: ["ADMIN"] },
       { href: "/dashboard/usuarios", label: "Usuarios", icon: UserCog, roles: ["ADMIN"] },
+      { href: "/dashboard/auditoria", label: "Auditoría", icon: History, roles: ["ADMIN"] },
       { href: "/dashboard/carga-inicial", label: "Carga inicial", icon: FileSpreadsheet, roles: ["ADMIN"] },
       { href: "/dashboard/establecimiento", label: "Establecimiento", icon: Building2, roles: ["ADMIN"] },
       { href: "/dashboard/suscripcion", label: "Suscripción", icon: CreditCard, roles: ["ADMIN"] },
