@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  normNombre, pick, planificarDosis, planificarLotes, planificarVacunas, toEntero, toISODate, type VacunaRef,
+  clasificarPacientes, normNombre, pick, planificarDosis, planificarLotes, planificarVacunas, toEntero, toISODate, type VacunaRef,
 } from "@/lib/importacion";
 
 describe("lectura tolerante", () => {
@@ -129,5 +129,30 @@ describe("planificarLotes", () => {
     expect(r.insertar).toHaveLength(0);
     expect(r.omitidas).toBe(2);
     expect(r.errores.map((e) => e.fila)).toEqual([4, 5, 6]);
+  });
+});
+
+describe("clasificarPacientes", () => {
+  const existente = { nombre_completo: "Ana Pérez", email: null, telefono: "+573001234567", fecha_nacimiento: "1990-03-15", autoriza_mensajes: "AUTORIZADO" };
+  const fila = { documento_identidad: "111", nombre_completo: "Ana Pérez", email: null, telefono: "+573001234567", fecha_nacimiento: "1990-03-15" };
+  const existentes = new Map([["111", existente]]);
+
+  it("distingue nuevos, iguales y actualizados", () => {
+    const r = clasificarPacientes([
+      fila,                                                    // igual
+      { ...fila, documento_identidad: "222" },                 // nuevo
+      { ...fila, telefono: "+573009999999" },                  // existe pero cambió el teléfono
+    ].map((f, i) => (i === 2 ? { ...f, documento_identidad: "111" } : f)), existentes);
+    expect(r).toMatchObject({ nuevos: 1, actualizados: 1, iguales: 1 });
+    expect(r.aGuardar).toHaveLength(2); // lo que ya estaba igual no se vuelve a guardar
+  });
+  it("la autorización solo cuenta si la columna venía en el archivo", () => {
+    expect(clasificarPacientes([fila], existentes).iguales).toBe(1);
+    expect(clasificarPacientes([{ ...fila, autoriza_mensajes: "AUTORIZADO" }], existentes).iguales).toBe(1);
+    expect(clasificarPacientes([{ ...fila, autoriza_mensajes: "NO_AUTORIZADO" }], existentes).actualizados).toBe(1);
+  });
+  it("un correo o fecha de nacimiento distintos también cuentan como cambio", () => {
+    expect(clasificarPacientes([{ ...fila, email: "ana@mail.com" }], existentes).actualizados).toBe(1);
+    expect(clasificarPacientes([{ ...fila, fecha_nacimiento: null }], existentes).actualizados).toBe(1);
   });
 });

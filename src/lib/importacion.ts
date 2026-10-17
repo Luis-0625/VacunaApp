@@ -248,3 +248,36 @@ export function planificarLotes(rows: Fila[], ctx: { vacunas: Map<string, Vacuna
   });
   return { insertar, omitidas, errores };
 }
+
+// ---------------------------------------------------------------------------------------------
+// Pacientes: qué es nuevo, qué cambió y qué ya estaba igual
+
+export interface PacienteExistente {
+  nombre_completo: string;
+  email: string | null;
+  telefono: string;
+  fecha_nacimiento: string | null;
+  autoriza_mensajes: string | null;
+}
+
+/**
+ * Separa las filas ya validadas de pacientes: nuevos, actualizados (existen pero algún dato cambió) e iguales (existen
+ * sin cambios: no se tocan). Solo `aGuardar` se envía a la base. La autorización solo cuenta si la columna venía en el archivo.
+ */
+export function clasificarPacientes(filas: Record<string, unknown>[], existentes: Map<string, PacienteExistente>) {
+  const aGuardar: Record<string, unknown>[] = [];
+  let nuevos = 0, actualizados = 0, iguales = 0;
+  for (const f of filas) {
+    const e = existentes.get(String(f.documento_identidad));
+    if (!e) { nuevos++; aGuardar.push(f); continue; }
+    const igual =
+      f.nombre_completo === e.nombre_completo &&
+      (f.email ?? null) === (e.email ?? null) &&
+      f.telefono === e.telefono &&
+      (f.fecha_nacimiento ?? null) === (e.fecha_nacimiento ?? null) &&
+      (!("autoriza_mensajes" in f) || f.autoriza_mensajes === e.autoriza_mensajes);
+    if (igual) iguales++;
+    else { actualizados++; aGuardar.push(f); }
+  }
+  return { aGuardar, nuevos, actualizados, iguales };
+}

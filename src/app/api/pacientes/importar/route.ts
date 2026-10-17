@@ -3,6 +3,7 @@ import { requireApi } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { toE164 } from "@/lib/phone";
 import { parseAutoriza } from "@/lib/pacientes";
+import { clasificarPacientes, type PacienteExistente } from "@/lib/importacion";
 
 export const dynamic = "force-dynamic";
 
@@ -96,10 +97,25 @@ export async function POST(request: NextRequest) {
     });
   });
 
-  let importados = 0;
+  // importados = pacientes nuevos; actualizados = ya existían y algún dato cambió; omitidas = ya existían sin cambios
+  let importados = 0, actualizados = 0, omitidas = 0;
   if (validos.size > 0) {
     const db = createAdminClient();
-    const todos = Array.from(validos.values());
+
+    // Pacientes que ya tiene el centro con esos documentos
+    const existentes = new Map<string, PacienteExistente>();
+    const documentos = Array.from(validos.keys());
+    for (let i = 0; i < documentos.length; i += 300) {
+      const { data, error } = await db.from("pacientes")
+        .select("documento_identidad, nombre_completo, email, telefono, fecha_nacimiento, autoriza_mensajes")
+        .eq("centro_id", g.perfil.centro_id).in("documento_identidad", documentos.slice(i, i + 300));
+      if (error) return NextResponse.json({ error: `Error al consultar: ${error.message}`, importados, errores }, { status: 500 });
+      (data ?? []).forEach((p) => existentes.set(p.documento_identidad, p));
+    }
+
+    const plan = clasificarPacientes(Array.from(validos.values()), existentes);
+    omitidas = plan.iguales;
+    const todos = plan.aGuardar;
     const grupos = [todos.filter((r) => "autoriza_mensajes" in r), todos.filter((r) => !("autoriza_mensajes" in r))];
     for (const lote of grupos) for (let i = 0; i < lote.length; i += 500) {
       const chunk = lote.slice(i, i + 500);
@@ -112,9 +128,10 @@ export async function POST(request: NextRequest) {
           { status: 500 }
         );
       }
-      importados += chunk.length;
     }
+    importados = plan.nuevos;
+    actualizados = plan.actualizados;
   }
 
-  return NextResponse.json({ total: rows.length, importados, errores });
+  return NextResponse.json({ total: rows.length, importados, actualizados, omitidas, errores });
 }

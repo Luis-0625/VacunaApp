@@ -9,6 +9,7 @@ interface Resultado {
   total: number;
   importados: number;
   omitidas?: number;
+  actualizados?: number;
   errores: { fila: number; referencia?: string; documento?: string; motivo: string }[];
   error?: string;
 }
@@ -144,6 +145,7 @@ function FilaHoja({ nombre, total, estado, resultado }: { nombre: string; total:
         <>
           <p className="text-sm text-slate-600">
             <strong className="text-emerald-700">{resultado.importados} cargadas</strong>
+            {!!resultado.actualizados && <> · {resultado.actualizados} actualizadas (ya existían con datos distintos)</>}
             {!!resultado.omitidas && <> · {resultado.omitidas} ya existían (omitidas)</>}
             {resultado.errores.length > 0 && <> · <strong className="text-red-700">{resultado.errores.length} con error</strong></>}
           </p>

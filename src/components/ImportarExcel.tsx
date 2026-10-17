@@ -8,6 +8,8 @@ import { CheckCircle2, FileSpreadsheet, XCircle } from "lucide-react";
 interface ImportResult {
   total: number;
   importados: number;
+  actualizados?: number;
+  omitidas?: number;
   errores: { fila: number; documento?: string; motivo: string }[];
 }
 
@@ -95,8 +97,10 @@ export default function ImportarExcel({ onDone }: { onDone?: () => void }) {
         <div className="space-y-3">
           <div className="flex gap-6 text-sm">
             <span className="flex items-center gap-1 text-green-700">
-              <CheckCircle2 size={16} /> {result.importados} importados
+              <CheckCircle2 size={16} /> {result.importados} nuevos
             </span>
+            {!!result.actualizados && <span className="text-amber-700">{result.actualizados} actualizados</span>}
+            {!!result.omitidas && <span className="text-slate-600">{result.omitidas} ya existían</span>}
             <span className="flex items-center gap-1 text-red-700">
               <XCircle size={16} /> {result.errores.length} con error
             </span>
